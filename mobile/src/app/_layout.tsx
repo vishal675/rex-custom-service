@@ -14,7 +14,7 @@ import { DarkTheme, DefaultTheme, Stack, ThemeProvider } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { Platform, StyleSheet, View } from 'react-native';
 
 import { Button } from '@/components/ui/button';
 import { Text } from '@/components/ui/text';
@@ -29,6 +29,28 @@ import { spacing } from '@/theme/tokens';
 import { useTheme } from '@/theme/use-theme';
 
 SplashScreen.preventAutoHideAsync();
+
+/**
+ * Bottom sheet on iOS. On Android, native form sheets are unreliable (especially with the keyboard),
+ * so the same screens open as a regular screen with a header and back button.
+ */
+function sheetOptions(detents: number[], title: string, background: string) {
+  return Platform.OS === 'ios'
+    ? {
+        presentation: 'formSheet' as const,
+        sheetAllowedDetents: detents,
+        sheetGrabberVisible: true,
+        sheetCornerRadius: 28,
+        contentStyle: { backgroundColor: background },
+      }
+    : {
+        presentation: 'card' as const,
+        headerShown: true,
+        title,
+        headerShadowVisible: false,
+        contentStyle: { backgroundColor: background },
+      };
+}
 
 export default function RootLayout() {
   const { colors, scheme } = useTheme();
@@ -110,36 +132,9 @@ function RootNavigator() {
 
         <Stack.Protected guard={signedIn && onboarded}>
           <Stack.Screen name="(tabs)" />
-          <Stack.Screen
-            name="go-free"
-            options={{
-              presentation: 'formSheet',
-              sheetAllowedDetents: [0.72, 0.95],
-              sheetGrabberVisible: true,
-              sheetCornerRadius: 28,
-              contentStyle: { backgroundColor: colors.surface },
-            }}
-          />
-          <Stack.Screen
-            name="add-friend"
-            options={{
-              presentation: 'formSheet',
-              sheetAllowedDetents: [0.6, 0.95],
-              sheetGrabberVisible: true,
-              sheetCornerRadius: 28,
-              contentStyle: { backgroundColor: colors.surface },
-            }}
-          />
-          <Stack.Screen
-            name="user/[id]"
-            options={{
-              presentation: 'formSheet',
-              sheetAllowedDetents: [0.55, 0.95],
-              sheetGrabberVisible: true,
-              sheetCornerRadius: 28,
-              contentStyle: { backgroundColor: colors.surface },
-            }}
-          />
+          <Stack.Screen name="go-free" options={sheetOptions([0.72, 0.95], "I'm free", colors.surface)} />
+          <Stack.Screen name="add-friend" options={sheetOptions([0.6, 0.95], "Add a friend", colors.surface)} />
+          <Stack.Screen name="user/[id]" options={sheetOptions([0.55, 0.95], "Friend", colors.surface)} />
           <Stack.Screen
             name="circle/[id]"
             options={{
