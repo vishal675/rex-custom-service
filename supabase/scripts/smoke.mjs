@@ -76,7 +76,25 @@ try {
   const stA = must(await A.client.rpc('my_status'), 'status');
   check("A sees B is in", stA.availability?.join_count === 1);
 
-  must(await B.client.from('meetup_messages').insert({ availability_id: fn[0].availability_id, body: 'On my way' }), 'message');
+  // Realtime: A (owner) must receive B's chat message live, exactly like the app's RealtimeSync.
+  await A.client.realtime.setAuth((await A.client.auth.getSession()).data.session.access_token);
+  const received = new Promise((resolve) => {
+    const timer = setTimeout(() => resolve(null), 10_000);
+    A.client
+      .channel('smoke-chat')
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'meetup_messages' }, (p) => {
+        clearTimeout(timer);
+        resolve(p.new);
+      })
+      .subscribe(async (status) => {
+        if (status === 'SUBSCRIBED') {
+          must(await B.client.from('meetup_messages').insert({ availability_id: fn[0].availability_id, body: 'On my way' }), 'message');
+        }
+      });
+  });
+  const live = await received;
+  check('chat message delivered live to the other person', live?.body === 'On my way', JSON.stringify(live));
+  await A.client.removeAllChannels();
   check('A reads meetup chat', must(await A.client.from('meetup_messages').select('body'), 'msgs').length === 1);
   const meetupsA = must(await A.client.rpc('my_meetups'), 'my_meetups');
   check('meetup listed for owner', meetupsA.length === 1 && meetupsA[0].is_live && meetupsA[0].participant_count === 2);
