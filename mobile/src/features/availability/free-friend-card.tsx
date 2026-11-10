@@ -1,4 +1,5 @@
 import * as Haptics from 'expo-haptics';
+import { router } from 'expo-router';
 import { Alert, StyleSheet, View } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 
@@ -39,7 +40,7 @@ export function FreeFriendCard({ item, now, index }: Props) {
     <Animated.View
       entering={FadeInDown.delay(index * 60).springify().damping(18)}
       style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-      <Avatar name={item.displayName} free size={44} />
+      <Avatar name={item.displayName} path={item.avatarPath} free size={44} />
       <View style={styles.body}>
         <Text variant="bodyStrong" numberOfLines={1}>
           {item.displayName.split(' ')[0]}
@@ -49,10 +50,18 @@ export function FreeFriendCard({ item, now, index }: Props) {
           {others > 0 ? ` · ${others} in` : ''}
         </Text>
       </View>
+      {item.joined ? (
+        <Button
+          size="sm"
+          variant="secondary"
+          label="Chat"
+          onPress={() => router.push({ pathname: '/meetup/[id]', params: { id: item.availabilityId } })}
+        />
+      ) : null}
       <Button
         size="sm"
-        variant={item.joined ? 'secondary' : 'primary'}
-        label={item.joined ? "You're in ✓" : "I'm in"}
+        variant={item.joined ? 'ghost' : 'primary'}
+        label={item.joined ? 'Leave' : "I'm in"}
         loading={join.isPending}
         onPress={toggle}
       />

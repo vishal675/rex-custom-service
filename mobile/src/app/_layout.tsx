@@ -21,6 +21,7 @@ import { Text } from '@/components/ui/text';
 import { SessionProvider, signOut, useSession } from '@/features/auth/session';
 import { useMyStatus } from '@/features/availability/api';
 import { AvailabilityProvider } from '@/features/availability/availability-context';
+import { PushSync } from '@/features/availability/push-sync';
 import { RealtimeSync } from '@/features/availability/realtime-sync';
 import { errorMessage } from '@/lib/errors';
 import { queryClient } from '@/lib/query';
@@ -92,7 +93,12 @@ function RootNavigator() {
 
   return (
     <AvailabilityProvider>
-      {signedIn && onboarded ? <RealtimeSync /> : null}
+      {signedIn && onboarded ? (
+        <>
+          <RealtimeSync />
+          <PushSync />
+        </>
+      ) : null}
       <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.background } }}>
         <Stack.Protected guard={!signedIn}>
           <Stack.Screen name="sign-in" />
@@ -142,6 +148,14 @@ function RootNavigator() {
               title: 'Group',
               headerShadowVisible: false,
             }}
+          />
+          <Stack.Screen
+            name="meetup/[id]"
+            options={{ headerShown: true, title: 'Chat', headerShadowVisible: false, headerBackButtonDisplayMode: 'minimal' }}
+          />
+          <Stack.Screen
+            name="edit-profile"
+            options={{ headerShown: true, title: 'Edit profile', headerShadowVisible: false, headerBackButtonDisplayMode: 'minimal' }}
           />
           <Stack.Screen
             name="profile"

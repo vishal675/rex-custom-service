@@ -67,7 +67,7 @@ export default function HomeScreen() {
         <Text style={styles.wordmark}>{APP_NAME}</Text>
         <Link href="/profile" asChild>
           <PressableScale accessibilityRole="button" accessibilityLabel="Profile and settings">
-            <Avatar name={myName || '?'} size={36} />
+            <Avatar name={myName || '?'} path={profile.data?.avatarPath} size={36} />
           </PressableScale>
         </Link>
       </View>
@@ -88,7 +88,16 @@ export default function HomeScreen() {
               Notified {current.recipientCount} {current.recipientCount === 1 ? 'friend' : 'friends'}
               {current.joinCount > 0 ? ` · ${current.joinCount} in` : ''}
             </Text>
-            <Button variant="secondary" label="I'M BUSY" onPress={busy} loading={isSaving} style={styles.busy} />
+            <View style={styles.actions}>
+              {current.joinCount > 0 ? (
+                <Button
+                  label="Open chat"
+                  onPress={() => router.push({ pathname: '/meetup/[id]', params: { id: current.id } })}
+                  style={styles.busy}
+                />
+              ) : null}
+              <Button variant="secondary" label="I'M BUSY" onPress={busy} loading={isSaving} style={styles.busy} />
+            </View>
           </Animated.View>
         ) : (
           <Animated.View entering={FadeIn} exiting={FadeOut} style={styles.status}>
@@ -131,7 +140,8 @@ const styles = StyleSheet.create({
   wordmark: { fontFamily: fonts.displayHeavy, fontSize: 26, letterSpacing: -0.6 },
   hero: { alignItems: 'center', paddingVertical: spacing.md },
   status: { alignItems: 'center', gap: spacing.md, minHeight: 80 },
-  busy: { minWidth: 160 },
+  busy: { minWidth: 140 },
+  actions: { flexDirection: 'row', gap: spacing.sm },
   center: { textAlign: 'center' },
   sectionHeader: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginTop: spacing.sm },
   liveDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: palette.lime },

@@ -244,6 +244,59 @@ exception when others then
   if sqlerrm like 'FAIL%' then raise; end if;
 end $$;
 
+-- T13: meetup chat (carol joins alice's live plan; alice ↔ bob are blocked now)
+select set_config('request.jwt.claims', '{"sub":"a0000000-0000-4000-8000-000000000003","role":"authenticated"}', true);
+do $$
+declare av uuid;
+begin
+  select availability_id into av from public.free_now() where username = 'alice';
+  if av is null then raise exception 'FAIL T13a: carol cannot see alice free'; end if;
+  perform public.join_availability(av);
+  insert into public.meetup_messages (availability_id, body) values (av, 'Coffee at 5?');
+  if (select count(*) from public.my_meetups()) <> 1 then raise exception 'FAIL T13b: my_meetups'; end if;
+  if (select body from public.meetup_thread(av) limit 1) <> 'Coffee at 5?' then raise exception 'FAIL T13c: thread'; end if;
+  if (select count(*) from public.meetup_participants(av)) <> 2 then raise exception 'FAIL T13d: participants'; end if;
+end $$;
+select set_config('request.jwt.claims', '{"sub":"a0000000-0000-4000-8000-000000000004","role":"authenticated"}', true);
+do $$ begin
+  perform * from public.meetup_thread((select id from t_av));
+  raise exception 'FAIL T13e: stranger read thread';
+exception when others then
+  if sqlerrm like 'FAIL%' then raise; end if;
+end $$;
+
+-- T14: chat rate limit (30 / minute)
+select set_config('request.jwt.claims', '{"sub":"a0000000-0000-4000-8000-000000000003","role":"authenticated"}', true);
+do $$
+declare av uuid := (select availability_id from public.my_meetups() limit 1);
+begin
+  for i in 1..29 loop
+    insert into public.meetup_messages (availability_id, body) values (av, 'msg ' || i);
+  end loop;
+  begin
+    insert into public.meetup_messages (availability_id, body) values (av, 'one too many');
+    raise exception 'FAIL T14: rate limit not enforced';
+  exception when others then
+    if sqlerrm like 'FAIL%' then raise; end if;
+    if sqlerrm <> 'rate_limited' then raise exception 'FAIL T14: wrong error %', sqlerrm; end if;
+  end;
+end $$;
+
+-- T15: reports survive the reporter's account deletion
+reset role;
+insert into public.reports (reporter_id, reported_user_id, reason)
+values ('a0000000-0000-4000-8000-000000000004', 'a0000000-0000-4000-8000-000000000001', 'spam');
+delete from auth.users where id = 'a0000000-0000-4000-8000-000000000004';
+do $$ begin
+  if not exists (select 1 from public.reports where reporter_id is null and reported_user_id = 'a0000000-0000-4000-8000-000000000001') then
+    raise exception 'FAIL T15: report lost on account deletion';
+  end if;
+  if exists (select 1 from public.profiles where id = 'a0000000-0000-4000-8000-000000000004') then
+    raise exception 'FAIL T15b: profile not deleted with account';
+  end if;
+end $$;
+set local role authenticated;
+
 -- T12: anon has no access at all
 reset role;
 set local role anon;

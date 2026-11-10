@@ -78,6 +78,22 @@ try {
 
   must(await B.client.from('meetup_messages').insert({ availability_id: fn[0].availability_id, body: 'On my way' }), 'message');
   check('A reads meetup chat', must(await A.client.from('meetup_messages').select('body'), 'msgs').length === 1);
+  const meetupsA = must(await A.client.rpc('my_meetups'), 'my_meetups');
+  check('meetup listed for owner', meetupsA.length === 1 && meetupsA[0].is_live && meetupsA[0].participant_count === 2);
+  const thread = must(await A.client.rpc('meetup_thread', { p_availability_id: fn[0].availability_id }), 'thread');
+  check('thread returns message with sender name', thread[0]?.body === 'On my way' && thread[0]?.sender_name === 'Smoke B');
+  const parts = must(await B.client.rpc('meetup_participants', { p_availability_id: fn[0].availability_id }), 'participants');
+  check('participants listed', parts.length === 2);
+
+  const jpeg = new Uint8Array([0xff, 0xd8, 0xff, 0xe0, 0, 16, 74, 70, 73, 70, 0, 1, 0xff, 0xd9]);
+  const own = await A.client.storage.from('avatars').upload(`${A.id}/smoke.jpg`, jpeg, { contentType: 'image/jpeg' });
+  check('upload photo to own folder', !own.error, JSON.stringify(own.error));
+  const other = await A.client.storage.from('avatars').upload(`${B.id}/evil.jpg`, jpeg, { contentType: 'image/jpeg' });
+  check("cannot upload into someone else's folder", !!other.error);
+  const setPath = await A.client.from('profiles').update({ avatar_path: `${A.id}/smoke.jpg` }).eq('id', A.id);
+  check('profile points at photo', !setPath.error, JSON.stringify(setPath.error));
+  const badPath = await A.client.from('profiles').update({ avatar_path: `${B.id}/x.jpg` }).eq('id', A.id);
+  check("profile can't point at another user's file", !!badPath.error);
 
   const c1 = must(await A.client.from('circles').insert({ name: 'One', emoji: '🎓' }).select('id').single(), 'circle1');
   must(await A.client.from('circles').insert({ name: 'Two' }).select('id').single(), 'circle2');
@@ -111,7 +127,11 @@ try {
   const admin = createClient(URL_, key, { auth: { persistSession: false } });
   const { data } = await admin.auth.admin.listUsers({ perPage: 1000 });
   const doomed = (data?.users ?? []).filter((u) => u.email?.endsWith('@test.vybe.invalid'));
-  for (const u of doomed) await admin.auth.admin.deleteUser(u.id);
+  for (const u of doomed) {
+    const { data: files } = await admin.storage.from('avatars').list(u.id);
+    if (files?.length) await admin.storage.from('avatars').remove(files.map((f) => `${u.id}/${f.name}`));
+    await admin.auth.admin.deleteUser(u.id);
+  }
   console.log(`cleaned up ${doomed.length} test user(s)`);
 }
 

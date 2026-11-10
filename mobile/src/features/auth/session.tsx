@@ -2,6 +2,7 @@ import type { Session } from '@supabase/supabase-js';
 import { useQuery } from '@tanstack/react-query';
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
 
+import { unregisterPush } from '@/lib/push';
 import { queryClient, queryKeys } from '@/lib/query';
 import { supabase } from '@/lib/supabase';
 
@@ -59,6 +60,8 @@ export function useProfile() {
 }
 
 export async function signOut() {
+  // Best effort: stop this device receiving the account's notifications.
+  await unregisterPush().catch(() => {});
   await supabase.auth.signOut();
   queryClient.clear();
 }

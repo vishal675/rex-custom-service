@@ -87,7 +87,7 @@ export default function AddFriendSheet() {
 
       {result ? (
         <View style={[styles.result, { backgroundColor: colors.surfaceRaised }]}>
-          <Avatar name={result.displayName} />
+          <Avatar name={result.displayName} path={result.avatarPath} />
           <View style={styles.flex}>
             <Text variant="bodyStrong">{result.displayName}</Text>
             <Text variant="caption" tone="muted">

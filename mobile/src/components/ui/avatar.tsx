@@ -1,4 +1,7 @@
+import { Image } from 'expo-image';
 import { StyleSheet, View } from 'react-native';
+
+import { avatarUrl } from '@/lib/storage';
 
 import { fonts } from '@/theme/tokens';
 import { useTheme } from '@/theme/use-theme';
@@ -27,9 +30,12 @@ type Props = {
   size?: number;
   /** Shows the lime "free" ring around the avatar. */
   free?: boolean;
+  /** Storage path of the profile photo; falls back to initials. */
+  path?: string | null;
 };
 
-export function Avatar({ name, size = 44, free }: Props) {
+export function Avatar({ name, size = 44, free, path }: Props) {
+  const uri = avatarUrl(path);
   const { colors } = useTheme();
   const ring = free ? 2.5 : 0;
   const gap = free ? 2.5 : 0;
@@ -57,9 +63,17 @@ export function Avatar({ name, size = 44, free }: Props) {
           alignItems: 'center',
           justifyContent: 'center',
         }}>
-        <Text style={{ fontFamily: fonts.bold, fontSize: size * 0.36, color: '#1A1A1A' }}>
-          {initials(name)}
-        </Text>
+        {uri ? (
+          <Image
+            source={{ uri }}
+            style={{ width: size, height: size, borderRadius: size / 2 }}
+            contentFit="cover"
+            transition={150}
+            accessibilityIgnoresInvertColors
+          />
+        ) : (
+          <Text style={{ fontFamily: fonts.bold, fontSize: size * 0.36, color: '#1A1A1A' }}>{initials(name)}</Text>
+        )}
       </View>
     </View>
   );

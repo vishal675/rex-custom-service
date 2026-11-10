@@ -454,8 +454,8 @@ export type Database = {
           id: string;
           message_id: string | null;
           reason: string;
-          reported_user_id: string;
-          reporter_id: string;
+          reported_user_id: string | null;
+          reporter_id: string | null;
           status: string;
         };
         ComputedFields: never;
@@ -466,8 +466,8 @@ export type Database = {
           id?: string;
           message_id?: string | null;
           reason: string;
-          reported_user_id: string;
-          reporter_id?: string;
+          reported_user_id?: string | null;
+          reporter_id?: string | null;
           status?: string;
         };
         Update: {
@@ -477,8 +477,8 @@ export type Database = {
           id?: string;
           message_id?: string | null;
           reason?: string;
-          reported_user_id?: string;
-          reporter_id?: string;
+          reported_user_id?: string | null;
+          reporter_id?: string | null;
           status?: string;
         };
         Relationships: [
@@ -643,6 +643,31 @@ export type Database = {
         Args: { p_availability_id: string };
         Returns: undefined;
       };
+      meetup_participants: {
+        Args: { p_availability_id: string };
+        Returns: {
+          avatar_path: string;
+          display_name: string;
+          is_owner: boolean;
+          user_id: string;
+        }[];
+      };
+      meetup_thread: {
+        Args: {
+          p_availability_id: string;
+          p_before_created_at?: string;
+          p_before_id?: string;
+          p_limit?: number;
+        };
+        Returns: {
+          body: string;
+          created_at: string;
+          id: string;
+          sender_avatar_path: string;
+          sender_id: string;
+          sender_name: string;
+        }[];
+      };
       my_friends: {
         Args: Record<PropertyKey, never>;
         Returns: {
@@ -652,6 +677,22 @@ export type Database = {
           status: string;
           user_id: string;
           username: string;
+        }[];
+      };
+      my_meetups: {
+        Args: Record<PropertyKey, never>;
+        Returns: {
+          activity: string;
+          availability_id: string;
+          ends_at: string;
+          is_live: boolean;
+          last_message: string;
+          last_message_at: string;
+          owner_avatar_path: string;
+          owner_id: string;
+          owner_name: string;
+          participant_count: number;
+          starts_at: string;
         }[];
       };
       my_status: { Args: Record<PropertyKey, never>; Returns: Json };

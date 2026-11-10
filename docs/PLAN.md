@@ -45,9 +45,15 @@ All data is mocked. Nothing is saved or sent yet.
 - [ ] Custom SMTP (e.g. Resend) — required before real users: the free-plan mailer sends links only, to team members only, 2/hour
 - [ ] Apple, Google (need developer accounts) · Phone OTP (needs Twilio Account SID + Auth Token + Verify Service SID)
 - [x] App wired to Supabase: auth-guarded routing, onboarding (18+), Home (go free / busy / free now / join), Friends (add by username, requests, remove, block, report), Groups (create/edit/delete, 2 free), realtime refresh, server clock sync
-- [x] End-to-end smoke test through the real API (`node supabase/scripts/smoke.mjs`) — 22 checks pass on UAT
-- [ ] Meetup chat UI (backend ready) · Delete account (Edge Function) · Push notifications
-- [ ] EAS dev builds, Sentry, CI
+- [x] End-to-end smoke test through the real API (`node supabase/scripts/smoke.mjs`) — 29 checks pass on UAT
+- [x] Meetup chat: Chats list, chat screen (paginated, realtime, read-only after the plan ends), report message, 30 msg/min limit
+- [x] Profile photos (pick → crop → 512 px JPEG → own storage folder) and Edit profile
+- [x] Delete account: in-app flow + `delete-account` Edge Function (removes photos, cascades data, keeps reports detached)
+- [x] Push backend: DB triggers → pg_net → `push` Edge Function → Expo (free / join / message; respects mute + quiet hours; prunes dead tokens). App registers token + opens the right screen on tap
+- [ ] **Deploy Edge Functions to UAT** — run `supabase/scripts/deploy-functions.sh` (needs your approval; see script header)
+- [ ] Push live on devices — needs EAS project + dev build (Apple/Google accounts)
+- [x] CI (GitHub Actions): typecheck, lint, unit tests, secret scan
+- [ ] EAS dev builds, Sentry
 
 > Note: new tables must `revoke all ... from anon, authenticated` and grant explicitly — Supabase's default privileges grant everything.
 

@@ -13,11 +13,12 @@ import { spacing } from '@/theme/tokens';
 
 /** Friend actions: remove, block, report. */
 export default function UserSheet() {
-  const { id, name, username, status } = useLocalSearchParams<{
+  const { id, name, username, status, avatar } = useLocalSearchParams<{
     id: string;
     name?: string;
     username?: string;
     status?: string;
+    avatar?: string;
   }>();
   const remove = useRemoveFriend();
   const block = useBlockUser();
@@ -78,7 +79,7 @@ export default function UserSheet() {
   return (
     <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
       <View style={styles.hero}>
-        <Avatar name={displayName} size={72} />
+        <Avatar name={displayName} path={avatar || null} size={72} />
         <Text variant="heading">{displayName}</Text>
         {username ? (
           <Text variant="body" tone="muted">

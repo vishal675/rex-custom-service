@@ -28,13 +28,15 @@ export function useFriends() {
   });
 }
 
-export type FoundUser = { id: string; username: string; displayName: string };
+export type FoundUser = { id: string; username: string; displayName: string; avatarPath: string | null };
 
 export async function findUser(username: string): Promise<FoundUser | null> {
   const { data, error } = await supabase.rpc('find_user', { p_username: username });
   if (error) throw error;
   const row = data?.[0];
-  return row ? { id: row.id, username: row.username ?? '', displayName: row.display_name || row.username || '' } : null;
+  return row
+    ? { id: row.id, username: row.username ?? '', displayName: row.display_name || row.username || '', avatarPath: row.avatar_path }
+    : null;
 }
 
 export function useSendFriendRequest() {

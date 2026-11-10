@@ -17,4 +17,7 @@ export const queryKeys = {
   freeNow: ['free_now'] as const,
   friends: ['friends'] as const,
   circles: ['circles'] as const,
+  meetups: ['meetups'] as const,
+  thread: (availabilityId: string) => ['thread', availabilityId] as const,
+  participants: (availabilityId: string) => ['participants', availabilityId] as const,
 };

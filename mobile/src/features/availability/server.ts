@@ -25,6 +25,7 @@ export type FreeNowItem = {
   userId: string;
   username: string;
   displayName: string;
+  avatarPath: string | null;
   activity: ActivityId | null;
   startedAt: number;
   expiresAt: number;
@@ -75,6 +76,7 @@ export function parseFreeNowRow(r: {
   user_id: string;
   username: string | null;
   display_name: string | null;
+  avatar_path: string | null;
   activity: string | null;
   starts_at: string;
   expires_at: string;
@@ -86,6 +88,7 @@ export function parseFreeNowRow(r: {
     userId: r.user_id,
     username: r.username ?? '',
     displayName: r.display_name || r.username || 'Friend',
+    avatarPath: r.avatar_path,
     activity: toActivity(r.activity),
     startedAt: time(r.starts_at),
     expiresAt: time(r.expires_at),

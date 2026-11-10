@@ -41,6 +41,7 @@ describe('parseFreeNowRow', () => {
       user_id: 'u',
       username: 'rahul',
       display_name: null,
+      avatar_path: null,
       activity: null,
       starts_at: '2026-11-10T10:00:00Z',
       expires_at: '2026-11-10T11:00:00Z',

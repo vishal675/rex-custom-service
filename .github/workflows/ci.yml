@@ -1,0 +1,46 @@
+# Runs on every push and pull request. Must be green before merging uat → prod.
+# (Database tests run locally against UAT with supabase/scripts/test-db.sh — they need DB credentials.)
+name: CI
+
+on:
+  push:
+    branches: [uat, prod, main]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  mobile:
+    name: Mobile — typecheck, lint, unit tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: mobile
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: mobile/package-lock.json
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm run lint
+      - run: npm test -- --ci
+
+  secrets-scan:
+    name: No secrets committed
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Block env files and secret-looking keys
+        run: |
+          set -e
+          if git ls-files | grep -E '(^|/)\.env(\.local)?$'; then echo "::error::.env file is tracked"; exit 1; fi
+          if git grep -nE 'sb_secret_[A-Za-z0-9_-]{10,}|sbp_[a-f0-9]{30,}|SK[a-f0-9]{32}|service_role"?\s*[:=]\s*"?eyJ' -- ':!*.md' ':!.github/workflows/ci.yml'; then
+            echo "::error::Possible secret committed"; exit 1
+          fi

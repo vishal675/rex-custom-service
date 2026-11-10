@@ -38,7 +38,7 @@ export default function FriendsScreen() {
   const freeIds = new Set((freeNow.data ?? []).filter((f) => f.expiresAt > now).map((f) => f.userId));
 
   const openUser = (f: Friend) =>
-    router.push({ pathname: '/user/[id]', params: { id: f.id, name: f.displayName, username: f.username, status: f.status } });
+    router.push({ pathname: '/user/[id]', params: { id: f.id, name: f.displayName, username: f.username, status: f.status, avatar: f.avatarPath ?? '' } });
 
   const newGroup = () => {
     if (!isPremium && circles.length >= 2) {
@@ -96,7 +96,7 @@ export default function FriendsScreen() {
               <ListRow
                 key={f.id}
                 onPress={() => openUser(f)}
-                left={<Avatar name={f.displayName} free={free} />}
+                left={<Avatar name={f.displayName} path={f.avatarPath} free={free} />}
                 title={f.displayName}
                 subtitle={free ? 'Free now' : `@${f.username}`}
               />
@@ -134,7 +134,7 @@ export default function FriendsScreen() {
           {incoming.map((r) => (
             <ListRow
               key={r.id}
-              left={<Avatar name={r.displayName} />}
+              left={<Avatar name={r.displayName} path={r.avatarPath} />}
               title={r.displayName}
               subtitle={`@${r.username}`}
               right={
@@ -162,7 +162,7 @@ export default function FriendsScreen() {
           {outgoing.map((r) => (
             <ListRow
               key={r.id}
-              left={<Avatar name={r.displayName} />}
+              left={<Avatar name={r.displayName} path={r.avatarPath} />}
               title={r.displayName}
               subtitle={`@${r.username} · pending`}
               right={<Button size="sm" variant="secondary" label="Cancel" onPress={() => run(remove.mutateAsync(r.id))} />}
