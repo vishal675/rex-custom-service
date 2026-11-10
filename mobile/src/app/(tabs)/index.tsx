@@ -1,5 +1,6 @@
 import * as Haptics from 'expo-haptics';
-import { Link, router } from 'expo-router';
+import { Link, router, useIsFocused } from 'expo-router';
+import { useEffect } from 'react';
 import { Alert, StyleSheet, View } from 'react-native';
 import Animated, { FadeIn, FadeOut } from 'react-native-reanimated';
 
@@ -14,14 +15,10 @@ import { useFreeNow, useMyStatus } from '@/features/availability/api';
 import { useAvailability } from '@/features/availability/availability-context';
 import { FreeButton } from '@/features/availability/free-button';
 import { FreeFriendCard } from '@/features/availability/free-friend-card';
-import {
-  formatRemaining,
-  getActivity,
-  isActive,
-  remainingFraction,
-  remainingMs,
-} from '@/features/availability/model';
+import { markHomeSeen } from '@/features/availability/seen';
+import { formatRemaining, getActivity, isActive, remainingFraction, remainingMs } from '@/features/availability/model';
 import { useNow } from '@/hooks/use-now';
+import { serverNow } from '@/lib/clock';
 import { errorMessage } from '@/lib/errors';
 import { fonts, palette, spacing } from '@/theme/tokens';
 
@@ -36,6 +33,12 @@ export default function HomeScreen() {
   const freeFriends = (freeNow.data ?? []).filter((f) => f.expiresAt > now);
   const activity = getActivity(current?.activity);
   const myName = profile.data?.displayName ?? '';
+
+  // Looking at Home clears its badge (friends who went free since you last looked).
+  const focused = useIsFocused();
+  useEffect(() => {
+    if (focused) markHomeSeen(serverNow());
+  }, [focused, freeNow.dataUpdatedAt]);
 
   const reuseLast = async () => {
     if (current || isSaving) return;

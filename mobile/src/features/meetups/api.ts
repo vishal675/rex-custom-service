@@ -1,14 +1,9 @@
-import {
-  useInfiniteQuery,
-  useMutation,
-  useQuery,
-  type InfiniteData,
-} from "@tanstack/react-query";
+import { useInfiniteQuery, useMutation, useQuery, type InfiniteData } from '@tanstack/react-query';
 
-import { useSession } from "@/features/auth/session";
-import { toActivity } from "@/features/availability/server";
-import { queryClient, queryKeys } from "@/lib/query";
-import { supabase } from "@/lib/supabase";
+import { useSession } from '@/features/auth/session';
+import { toActivity } from '@/features/availability/server';
+import { queryClient, queryKeys } from '@/lib/query';
+import { supabase } from '@/lib/supabase';
 
 export type Meetup = {
   availabilityId: string;
@@ -21,6 +16,7 @@ export type Meetup = {
   participantCount: number;
   lastMessage: string | null;
   lastMessageAt: number | null;
+  unreadCount: number;
 };
 
 export type ChatMessage = {
@@ -41,12 +37,12 @@ export function useMeetups() {
     enabled: !!userId,
     refetchInterval: 60_000,
     queryFn: async (): Promise<Meetup[]> => {
-      const { data, error } = await supabase.rpc("my_meetups");
+      const { data, error } = await supabase.rpc('my_meetups');
       if (error) throw error;
       return (data ?? []).map((m) => ({
         availabilityId: m.availability_id,
         ownerId: m.owner_id,
-        ownerName: m.owner_name ?? "Friend",
+        ownerName: m.owner_name ?? 'Friend',
         ownerAvatarPath: m.owner_avatar_path,
         activity: toActivity(m.activity),
         endsAt: Date.parse(m.ends_at),
@@ -54,6 +50,7 @@ export function useMeetups() {
         participantCount: m.participant_count,
         lastMessage: m.last_message,
         lastMessageAt: m.last_message_at ? Date.parse(m.last_message_at) : null,
+        unreadCount: m.unread_count,
       }));
     },
   });
@@ -66,7 +63,7 @@ export function useThread(availabilityId: string) {
     queryKey: queryKeys.thread(availabilityId),
     initialPageParam: null as { createdAt: string; id: string } | null,
     queryFn: async ({ pageParam }): Promise<ChatMessage[]> => {
-      const { data, error } = await supabase.rpc("meetup_thread", {
+      const { data, error } = await supabase.rpc('meetup_thread', {
         p_availability_id: availabilityId,
         p_before_created_at: pageParam?.createdAt,
         p_before_id: pageParam?.id,
@@ -76,7 +73,7 @@ export function useThread(availabilityId: string) {
       return (data ?? []).map((m) => ({
         id: m.id,
         senderId: m.sender_id,
-        senderName: m.sender_name ?? "Friend",
+        senderName: m.sender_name ?? 'Friend',
         senderAvatarPath: m.sender_avatar_path,
         body: m.body,
         createdAt: m.created_at,
@@ -97,13 +94,13 @@ export function useParticipants(availabilityId: string) {
   return useQuery({
     queryKey: queryKeys.participants(availabilityId),
     queryFn: async () => {
-      const { data, error } = await supabase.rpc("meetup_participants", {
+      const { data, error } = await supabase.rpc('meetup_participants', {
         p_availability_id: availabilityId,
       });
       if (error) throw error;
       return (data ?? []).map((p) => ({
         userId: p.user_id,
-        displayName: p.display_name ?? "Friend",
+        displayName: p.display_name ?? 'Friend',
         avatarPath: p.avatar_path,
         isOwner: p.is_owner,
       }));
@@ -111,17 +108,14 @@ export function useParticipants(availabilityId: string) {
   });
 }
 
-type ThreadData = InfiniteData<
-  ChatMessage[],
-  { createdAt: string; id: string } | null
->;
+type ThreadData = InfiniteData<ChatMessage[], { createdAt: string; id: string } | null>;
 
 export function useSendMessage(availabilityId: string) {
   const key = queryKeys.thread(availabilityId);
   return useMutation({
     mutationFn: async ({ body }: { body: string; senderId: string }) => {
       const { error } = await supabase
-        .from("meetup_messages")
+        .from('meetup_messages')
         .insert({ availability_id: availabilityId, body: body.trim() });
       if (error) throw error;
     },
@@ -132,7 +126,7 @@ export function useSendMessage(availabilityId: string) {
       const optimistic: ChatMessage = {
         id: `pending-${Date.now()}`,
         senderId,
-        senderName: "",
+        senderName: '',
         senderAvatarPath: null,
         body: body.trim(),
         createdAt: new Date().toISOString(),
@@ -142,10 +136,7 @@ export function useSendMessage(availabilityId: string) {
         data
           ? {
               ...data,
-              pages: [
-                [optimistic, ...(data.pages[0] ?? [])],
-                ...data.pages.slice(1),
-              ],
+              pages: [[optimistic, ...(data.pages[0] ?? [])], ...data.pages.slice(1)],
             }
           : { pages: [[optimistic]], pageParams: [null] },
       );
@@ -164,15 +155,21 @@ export function useSendMessage(availabilityId: string) {
   });
 }
 
-export async function reportMessage(
-  message: ChatMessage,
-  availabilityId: string,
-) {
-  const { error } = await supabase.from("reports").insert({
+/** Marks the chat read on the server and clears its unread count locally right away. */
+export async function markMeetupRead(availabilityId: string) {
+  queryClient.setQueryData<Meetup[]>(queryKeys.meetups, (list) =>
+    list?.map((m) => (m.availabilityId === availabilityId ? { ...m, unreadCount: 0 } : m)),
+  );
+  const { error } = await supabase.rpc('mark_meetup_read', { p_availability_id: availabilityId });
+  if (error) throw error;
+}
+
+export async function reportMessage(message: ChatMessage, availabilityId: string) {
+  const { error } = await supabase.from('reports').insert({
     reported_user_id: message.senderId,
     message_id: message.id,
     availability_id: availabilityId,
-    reason: "inappropriate",
+    reason: 'inappropriate',
   });
   if (error) throw error;
 }

@@ -38,7 +38,13 @@ describe('diffMembers', () => {
 
 describe('splitFriends', () => {
   it('groups by status', () => {
-    const f = (id: string, status: Friend['status']): Friend => ({ id, username: id, displayName: id, avatarPath: null, status });
+    const f = (id: string, status: Friend['status']): Friend => ({
+      id,
+      username: id,
+      displayName: id,
+      avatarPath: null,
+      status,
+    });
     const s = splitFriends([f('a', 'friend'), f('b', 'incoming'), f('c', 'outgoing'), f('d', 'friend')]);
     expect([s.friends.length, s.incoming.length, s.outgoing.length]).toEqual([2, 1, 1]);
   });

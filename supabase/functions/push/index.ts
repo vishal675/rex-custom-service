@@ -2,6 +2,9 @@
 //   kind = 'free'    → a friend is free: notify the recipients of that availability
 //   kind = 'join'    → someone said "I'm in": notify the owner
 //   kind = 'message' → new meetup chat message: notify the other participants
+//   kind = 'friend_request' → someone sent a friend request: notify the target
+// Each kind has its own sound (iOS: bundled file name; Android: channel, which owns the sound),
+// and message / request pushes carry the recipient's app-icon badge count.
 // Respects each recipient's notifications_enabled + quiet hours (in their own timezone),
 // and removes device tokens Expo reports as no longer registered.
 import { createClient } from 'npm:@supabase/supabase-js@2.119.0';
@@ -19,9 +22,36 @@ const ACTIVITIES: Record<string, string> = {
   other: '✨ Something',
 };
 
-const DURATIONS: Record<string, string> = { '30m': 'for 30 min', '1h': 'for 1 hr', '2h': 'for 2 hrs', tonight: 'till tonight' };
+const DURATIONS: Record<string, string> = {
+  '30m': 'for 30 min',
+  '1h': 'for 1 hr',
+  '2h': 'for 2 hrs',
+  tonight: 'till tonight',
+};
 
-type PushMessage = { to: string; title: string; body: string; data: Record<string, string>; sound: 'default'; priority: 'high' };
+type PushMessage = {
+  to: string;
+  title: string;
+  body: string;
+  data: Record<string, string>;
+  sound: string;
+  channelId: string;
+  priority: 'high' | 'default';
+  badge?: number;
+};
+
+/** Sound files are bundled in the app (mobile/assets/sounds) and Android channels created by the app. */
+const STYLE = {
+  free: { sound: 'vybe_free.wav', channelId: 'free', priority: 'high' },
+  join: { sound: 'vybe_free.wav', channelId: 'free', priority: 'high' },
+  message: { sound: 'vybe_message.wav', channelId: 'messages', priority: 'high' },
+  friend_request: { sound: 'vybe_free.wav', channelId: 'default', priority: 'default' },
+} as const;
+
+async function badgeFor(userId: string): Promise<number | undefined> {
+  const { data, error } = await admin.rpc('badge_count_for', { p_user: userId });
+  return error ? undefined : (data as number);
+}
 type Ticket = { status: 'ok' | 'error'; id?: string; message?: string; details?: { error?: string } };
 
 const json = (status: number, body: unknown) =>
@@ -42,9 +72,14 @@ export function inQuietHours(now: Date, tz: string, start: string | null, end: s
   if (!start || !end) return false;
   let local: number;
   try {
-    const parts = new Intl.DateTimeFormat('en-GB', { timeZone: tz, hour: '2-digit', minute: '2-digit', hourCycle: 'h23' })
-      .formatToParts(now);
-    local = Number(parts.find((p) => p.type === 'hour')?.value) * 60 + Number(parts.find((p) => p.type === 'minute')?.value);
+    const parts = new Intl.DateTimeFormat('en-GB', {
+      timeZone: tz,
+      hour: '2-digit',
+      minute: '2-digit',
+      hourCycle: 'h23',
+    }).formatToParts(now);
+    local =
+      Number(parts.find((p) => p.type === 'hour')?.value) * 60 + Number(parts.find((p) => p.type === 'minute')?.value);
   } catch {
     return false;
   }
@@ -57,7 +92,10 @@ export function inQuietHours(now: Date, tz: string, start: string | null, end: s
 async function tokensFor(userIds: string[]): Promise<{ userId: string; token: string }[]> {
   if (userIds.length === 0) return [];
   const [{ data: settings }, { data: tokens }] = await Promise.all([
-    admin.from('user_settings').select('user_id, timezone, notifications_enabled, quiet_hours_start, quiet_hours_end').in('user_id', userIds),
+    admin
+      .from('user_settings')
+      .select('user_id, timezone, notifications_enabled, quiet_hours_start, quiet_hours_end')
+      .in('user_id', userIds),
     admin.from('push_tokens').select('user_id, token').in('user_id', userIds),
   ]);
   const now = new Date();
@@ -114,7 +152,7 @@ async function handleFree(availabilityId: string) {
     .is('notified_at', null);
   const ids = (recipients ?? []).map((r) => r.user_id);
   const name = await nameOf(a.user_id);
-  const what = a.activity ? ACTIVITIES[a.activity] ?? 'Free' : 'Free to hang';
+  const what = a.activity ? (ACTIVITIES[a.activity] ?? 'Free') : 'Free to hang';
   const targets = await tokensFor(ids);
   const sent = await send(
     targets.map((t) => ({
@@ -122,8 +160,7 @@ async function handleFree(availabilityId: string) {
       title: `${name} is free`,
       body: `${what} · ${DURATIONS[a.duration] ?? ''}`.trim(),
       data: { type: 'free', availabilityId },
-      sound: 'default',
-      priority: 'high',
+      ...STYLE.free,
     })),
   );
   if (ids.length) {
@@ -147,31 +184,55 @@ async function handleJoin(availabilityId: string, joinerId: string) {
       title: `${name} is in! 🙌`,
       body: a.activity ? `For ${ACTIVITIES[a.activity] ?? 'your plan'}. Say hi in the chat.` : 'Say hi in the chat.',
       data: { type: 'join', availabilityId },
-      sound: 'default',
-      priority: 'high',
+      ...STYLE.join,
     })),
   );
 }
 
 async function handleMessage(messageId: string) {
-  const { data: m } = await admin.from('meetup_messages').select('availability_id, sender_id, body').eq('id', messageId).single();
+  const { data: m } = await admin
+    .from('meetup_messages')
+    .select('availability_id, sender_id, body')
+    .eq('id', messageId)
+    .single();
   if (!m) return 0;
   const [{ data: a }, { data: joins }] = await Promise.all([
     admin.from('availabilities').select('user_id').eq('id', m.availability_id).single(),
     admin.from('availability_joins').select('user_id').eq('availability_id', m.availability_id),
   ]);
-  const participants = new Set<string>([a?.user_id, ...(joins ?? []).map((j) => j.user_id)].filter(Boolean) as string[]);
+  const participants = new Set<string>(
+    [a?.user_id, ...(joins ?? []).map((j) => j.user_id)].filter(Boolean) as string[],
+  );
   participants.delete(m.sender_id);
   const name = await nameOf(m.sender_id);
   const targets = await tokensFor([...participants]);
+  const badges = new Map(
+    await Promise.all([...new Set(targets.map((t) => t.userId))].map(async (u) => [u, await badgeFor(u)] as const)),
+  );
   return send(
     targets.map((t) => ({
       to: t.token,
       title: name,
       body: m.body.length > 140 ? `${m.body.slice(0, 137)}…` : m.body,
       data: { type: 'message', availabilityId: m.availability_id },
-      sound: 'default',
-      priority: 'high',
+      ...STYLE.message,
+      badge: badges.get(t.userId),
+    })),
+  );
+}
+
+async function handleFriendRequest(requesterId: string, targetId: string) {
+  const name = await nameOf(requesterId);
+  const targets = await tokensFor([targetId]);
+  const badge = await badgeFor(targetId);
+  return send(
+    targets.map((t) => ({
+      to: t.token,
+      title: `${name} wants to be friends`,
+      body: 'Accept to see when each other is free.',
+      data: { type: 'friend_request', userId: requesterId },
+      ...STYLE.friend_request,
+      badge,
     })),
   );
 }
@@ -186,6 +247,7 @@ Deno.serve(async (req) => {
     if (body.kind === 'free') sent = await handleFree(body.availability_id);
     else if (body.kind === 'join') sent = await handleJoin(body.availability_id, body.user_id);
     else if (body.kind === 'message') sent = await handleMessage(body.message_id);
+    else if (body.kind === 'friend_request') sent = await handleFriendRequest(body.requester_id, body.target_id);
     else return json(400, { error: 'unknown_kind' });
     return json(200, { sent });
   } catch (e) {

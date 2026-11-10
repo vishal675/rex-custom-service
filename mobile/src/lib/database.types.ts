@@ -385,6 +385,40 @@ export type Database = {
           },
         ];
       };
+      meetup_reads: {
+        Row: {
+          availability_id: string;
+          last_read_at: string;
+          user_id: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          availability_id: string;
+          last_read_at?: string;
+          user_id: string;
+        };
+        Update: {
+          availability_id?: string;
+          last_read_at?: string;
+          user_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "meetup_reads_availability_id_fkey";
+            columns: ["availability_id"];
+            isOneToOne: false;
+            referencedRelation: "availabilities";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "meetup_reads_user_id_fkey";
+            columns: ["user_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       profiles: {
         Row: {
           avatar_path: string | null;
@@ -587,6 +621,7 @@ export type Database = {
       [_ in never]: never;
     };
     Functions: {
+      badge_count_for: { Args: { p_user: string }; Returns: number };
       block_user: { Args: { p_target: string }; Returns: undefined };
       complete_onboarding: {
         Args: {
@@ -643,6 +678,10 @@ export type Database = {
         Args: { p_availability_id: string };
         Returns: undefined;
       };
+      mark_meetup_read: {
+        Args: { p_availability_id: string };
+        Returns: undefined;
+      };
       meetup_participants: {
         Args: { p_availability_id: string };
         Returns: {
@@ -693,6 +732,7 @@ export type Database = {
           owner_name: string;
           participant_count: number;
           starts_at: string;
+          unread_count: number;
         }[];
       };
       my_status: { Args: Record<PropertyKey, never>; Returns: Json };

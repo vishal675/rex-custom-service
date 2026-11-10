@@ -1,7 +1,4 @@
-import {
-  BricolageGrotesque_700Bold,
-  BricolageGrotesque_800ExtraBold,
-} from '@expo-google-fonts/bricolage-grotesque';
+import { BricolageGrotesque_700Bold, BricolageGrotesque_800ExtraBold } from '@expo-google-fonts/bricolage-grotesque';
 import {
   Inter_400Regular,
   Inter_500Medium,
@@ -133,8 +130,8 @@ function RootNavigator() {
         <Stack.Protected guard={signedIn && onboarded}>
           <Stack.Screen name="(tabs)" />
           <Stack.Screen name="go-free" options={sheetOptions([0.72, 0.95], "I'm free", colors.surface)} />
-          <Stack.Screen name="add-friend" options={sheetOptions([0.6, 0.95], "Add a friend", colors.surface)} />
-          <Stack.Screen name="user/[id]" options={sheetOptions([0.55, 0.95], "Friend", colors.surface)} />
+          <Stack.Screen name="add-friend" options={sheetOptions([0.6, 0.95], 'Add a friend', colors.surface)} />
+          <Stack.Screen name="user/[id]" options={sheetOptions([0.55, 0.95], 'Friend', colors.surface)} />
           <Stack.Screen
             name="circle/[id]"
             options={{
@@ -146,11 +143,21 @@ function RootNavigator() {
           />
           <Stack.Screen
             name="meetup/[id]"
-            options={{ headerShown: true, title: 'Chat', headerShadowVisible: false, headerBackButtonDisplayMode: 'minimal' }}
+            options={{
+              headerShown: true,
+              title: 'Chat',
+              headerShadowVisible: false,
+              headerBackButtonDisplayMode: 'minimal',
+            }}
           />
           <Stack.Screen
             name="edit-profile"
-            options={{ headerShown: true, title: 'Edit profile', headerShadowVisible: false, headerBackButtonDisplayMode: 'minimal' }}
+            options={{
+              headerShown: true,
+              title: 'Edit profile',
+              headerShadowVisible: false,
+              headerBackButtonDisplayMode: 'minimal',
+            }}
           />
           <Stack.Screen
             name="profile"

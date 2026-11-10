@@ -12,14 +12,7 @@ type Props = Omit<PressableProps, 'style'> & {
 };
 
 /** A Pressable that gently shrinks on touch, with optional light haptic feedback. */
-export function PressableScale({
-  style,
-  scaleTo = 0.96,
-  haptic = true,
-  onPressIn,
-  onPressOut,
-  ...rest
-}: Props) {
+export function PressableScale({ style, scaleTo = 0.96, haptic = true, onPressIn, onPressOut, ...rest }: Props) {
   const scale = useSharedValue(1);
   const animatedStyle = useAnimatedStyle(() => ({ transform: [{ scale: scale.get() }] }));
 

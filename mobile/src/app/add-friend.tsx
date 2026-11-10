@@ -63,7 +63,13 @@ export default function AddFriendSheet() {
   };
 
   const actionLabel =
-    existing === 'friend' ? 'Friends ✓' : existing === 'outgoing' ? 'Requested' : existing === 'incoming' ? 'Accept' : 'Add';
+    existing === 'friend'
+      ? 'Friends ✓'
+      : existing === 'outgoing'
+        ? 'Requested'
+        : existing === 'incoming'
+          ? 'Accept'
+          : 'Add';
 
   return (
     <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">

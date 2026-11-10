@@ -40,11 +40,7 @@ export function FreeButton({ active, fraction, remainingLabel, activityLabel, on
   useEffect(() => {
     breathe.set(0);
     breathe.set(
-      withRepeat(
-        withTiming(1, { duration: active ? 1500 : 2600, easing: Easing.inOut(Easing.sin) }),
-        -1,
-        true,
-      ),
+      withRepeat(withTiming(1, { duration: active ? 1500 : 2600, easing: Easing.inOut(Easing.sin) }), -1, true),
     );
     return () => cancelAnimation(breathe);
   }, [active, breathe]);
@@ -56,10 +52,7 @@ export function FreeButton({ active, fraction, remainingLabel, activityLabel, on
 
   return (
     <View style={styles.wrap}>
-      <Animated.View
-        pointerEvents="none"
-        style={[styles.halo, { backgroundColor: colors.accent }, haloStyle]}
-      />
+      <Animated.View pointerEvents="none" style={[styles.halo, { backgroundColor: colors.accent }, haloStyle]} />
 
       {active && (
         <Svg width={RING_SIZE} height={RING_SIZE} style={styles.ring} pointerEvents="none">

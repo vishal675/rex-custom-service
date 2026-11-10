@@ -38,7 +38,9 @@ export function FreeFriendCard({ item, now, index }: Props) {
 
   return (
     <Animated.View
-      entering={FadeInDown.delay(index * 60).springify().damping(18)}
+      entering={FadeInDown.delay(index * 60)
+        .springify()
+        .damping(18)}
       style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}>
       <Avatar name={item.displayName} path={item.avatarPath} free size={44} />
       <View style={styles.body}>

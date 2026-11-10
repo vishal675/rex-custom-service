@@ -84,7 +84,15 @@ export function AvailabilityProvider({ children }: { children: ReactNode }) {
       goBusy,
       isSaving: goFreeMutation.isPending || endMutation.isPending,
     }),
-    [availability, lastSettings, status.data?.isPremium, goFree, goBusy, goFreeMutation.isPending, endMutation.isPending],
+    [
+      availability,
+      lastSettings,
+      status.data?.isPremium,
+      goFree,
+      goBusy,
+      goFreeMutation.isPending,
+      endMutation.isPending,
+    ],
   );
 
   return <AvailabilityContext.Provider value={value}>{children}</AvailabilityContext.Provider>;

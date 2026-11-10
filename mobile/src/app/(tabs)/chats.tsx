@@ -9,9 +9,11 @@ import { useSession } from '@/features/auth/session';
 import { useMeetups } from '@/features/meetups/api';
 import { meetupTitle } from '@/features/meetups/model';
 import { errorMessage } from '@/lib/errors';
-import { spacing } from '@/theme/tokens';
+import { fonts, radius, spacing } from '@/theme/tokens';
+import { useTheme } from '@/theme/use-theme';
 
 export default function ChatsScreen() {
+  const { colors } = useTheme();
   const { userId } = useSession();
   const meetups = useMeetups();
   const list = meetups.data ?? [];
@@ -37,14 +39,27 @@ export default function ChatsScreen() {
         list.map((m) => (
           <ListRow
             key={m.availabilityId}
-            onPress={() => router.push({ pathname: '/meetup/[id]', params: { id: m.availabilityId } })}
+            onPress={() =>
+              router.push({
+                pathname: '/meetup/[id]',
+                params: { id: m.availabilityId },
+              })
+            }
             left={<Avatar name={m.ownerName} path={m.ownerAvatarPath} free={m.isLive} />}
             title={meetupTitle(m, userId)}
             subtitle={m.lastMessage ?? `${m.participantCount} people · say hi`}
             right={
-              <Text variant="caption" tone={m.isLive ? 'accent' : 'muted'}>
-                {m.isLive ? 'Live' : 'Ended'}
-              </Text>
+              m.unreadCount > 0 ? (
+                <View style={[styles.unread, { backgroundColor: colors.danger }]}>
+                  <Text variant="caption" style={styles.unreadText}>
+                    {m.unreadCount > 99 ? '99+' : m.unreadCount}
+                  </Text>
+                </View>
+              ) : (
+                <Text variant="caption" tone={m.isLive ? 'accent' : 'muted'}>
+                  {m.isLive ? 'Live' : 'Ended'}
+                </Text>
+              )
             }
           />
         ))
@@ -57,4 +72,13 @@ const styles = StyleSheet.create({
   empty: { alignItems: 'center', gap: spacing.md, paddingTop: spacing.xxxl },
   emoji: { fontSize: 40, lineHeight: 48 },
   center: { textAlign: 'center' },
+  unread: {
+    minWidth: 22,
+    height: 22,
+    borderRadius: radius.pill,
+    paddingHorizontal: 6,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  unreadText: { color: '#FFFFFF', fontFamily: fonts.bold },
 });

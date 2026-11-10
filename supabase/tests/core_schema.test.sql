@@ -297,6 +297,30 @@ do $$ begin
 end $$;
 set local role authenticated;
 
+-- T16: unread counts + mark read (alice has carol's 30 unread messages from T13/T14)
+select set_config('request.jwt.claims', '{"sub":"a0000000-0000-4000-8000-000000000001","role":"authenticated"}', true);
+do $$
+declare av uuid; n int;
+begin
+  select availability_id, unread_count into av, n from public.my_meetups() where is_live;
+  if n <> 30 then raise exception 'FAIL T16a: expected 30 unread, got %', n; end if;
+  perform public.mark_meetup_read(av);
+  if (select unread_count from public.my_meetups() where availability_id = av) <> 0 then
+    raise exception 'FAIL T16b: mark read did not clear unread';
+  end if;
+end $$;
+do $$ begin
+  perform public.badge_count_for(auth.uid());
+  raise exception 'FAIL T16c: users can call badge_count_for';
+exception when insufficient_privilege then null;
+end $$;
+do $$ begin
+  perform public.mark_meetup_read((select id from t_av));  -- alice owns t_av, allowed
+  insert into public.meetup_reads (availability_id, user_id) values ((select id from t_av), auth.uid());
+  raise exception 'FAIL T16d: direct insert into meetup_reads allowed';
+exception when insufficient_privilege then null;
+end $$;
+
 -- T12: anon has no access at all
 reset role;
 set local role anon;

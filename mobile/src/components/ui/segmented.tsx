@@ -15,9 +15,7 @@ type Props<T extends string> = {
 export function Segmented<T extends string>({ options, value, onChange }: Props<T>) {
   const { colors } = useTheme();
   return (
-    <View
-      accessibilityRole="tablist"
-      style={[styles.track, { backgroundColor: colors.surfaceRaised }]}>
+    <View accessibilityRole="tablist" style={[styles.track, { backgroundColor: colors.surfaceRaised }]}>
       {options.map((opt) => {
         const selected = opt.value === value;
         return (

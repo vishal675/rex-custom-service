@@ -42,7 +42,9 @@ export default function ProfileScreen() {
     Alert.alert(
       'Delete your account?',
       'This permanently deletes your profile, friends, groups, plans, chats and photo. It can’t be undone.' +
-        (isPremium ? '\n\nYour Premium subscription is billed by the App Store / Google Play — cancel it there to stop renewals.' : ''),
+        (isPremium
+          ? '\n\nYour Premium subscription is billed by the App Store / Google Play — cancel it there to stop renewals.'
+          : ''),
       [
         { text: 'Cancel', style: 'cancel' },
         { text: 'Delete forever', style: 'destructive', onPress: reallyDelete },

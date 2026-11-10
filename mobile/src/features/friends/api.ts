@@ -36,7 +36,12 @@ export async function findUser(username: string): Promise<FoundUser | null> {
   if (error) throw error;
   const row = data?.[0];
   return row
-    ? { id: row.id, username: row.username ?? '', displayName: row.display_name || row.username || '', avatarPath: row.avatar_path }
+    ? {
+        id: row.id,
+        username: row.username ?? '',
+        displayName: row.display_name || row.username || '',
+        avatarPath: row.avatar_path,
+      }
     : null;
 }
 
@@ -123,7 +128,13 @@ export function useCircles() {
   });
 }
 
-type CircleInput = { id?: string; name: string; emoji: string | null; memberIds: string[]; currentMemberIds?: string[] };
+type CircleInput = {
+  id?: string;
+  name: string;
+  emoji: string | null;
+  memberIds: string[];
+  currentMemberIds?: string[];
+};
 
 export function useSaveCircle() {
   return useMutation({
@@ -133,13 +144,21 @@ export function useSaveCircle() {
         const { error } = await supabase.from('circles').update({ name: name.trim(), emoji }).eq('id', circleId);
         if (error) throw error;
       } else {
-        const { data, error } = await supabase.from('circles').insert({ name: name.trim(), emoji }).select('id').single();
+        const { data, error } = await supabase
+          .from('circles')
+          .insert({ name: name.trim(), emoji })
+          .select('id')
+          .single();
         if (error) throw error;
         circleId = data.id;
       }
       const { add, remove } = diffMembers(currentMemberIds, memberIds);
       if (remove.length) {
-        const { error } = await supabase.from('circle_members').delete().eq('circle_id', circleId).in('member_id', remove);
+        const { error } = await supabase
+          .from('circle_members')
+          .delete()
+          .eq('circle_id', circleId)
+          .in('member_id', remove);
         if (error) throw error;
       }
       if (add.length) {

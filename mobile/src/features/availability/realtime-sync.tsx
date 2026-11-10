@@ -1,8 +1,8 @@
-import { useEffect } from "react";
+import { useEffect } from 'react';
 
-import { useSession } from "@/features/auth/session";
-import { queryClient, queryKeys } from "@/lib/query";
-import { supabase } from "@/lib/supabase";
+import { useSession } from '@/features/auth/session';
+import { queryClient, queryKeys } from '@/lib/query';
+import { supabase } from '@/lib/supabase';
 
 /**
  * One realtime channel per signed-in user. Events only trigger refetches of the
@@ -19,77 +19,67 @@ export function RealtimeSync() {
     const channel = supabase
       .channel(`user:${userId}`)
       .on(
-        "postgres_changes",
+        'postgres_changes',
         {
-          event: "*",
-          schema: "public",
-          table: "availability_recipients",
+          event: '*',
+          schema: 'public',
+          table: 'availability_recipients',
           filter: `user_id=eq.${userId}`,
         },
         () => invalidate(queryKeys.freeNow),
       )
       // Friend requests and accepts. INSERT/UPDATE only — DELETE events can't be filtered or RLS-checked.
       .on(
-        "postgres_changes",
+        'postgres_changes',
         {
-          event: "INSERT",
-          schema: "public",
-          table: "friendships",
+          event: 'INSERT',
+          schema: 'public',
+          table: 'friendships',
           filter: `user_low=eq.${userId}`,
         },
         () => invalidate(queryKeys.friends),
       )
       .on(
-        "postgres_changes",
+        'postgres_changes',
         {
-          event: "INSERT",
-          schema: "public",
-          table: "friendships",
+          event: 'INSERT',
+          schema: 'public',
+          table: 'friendships',
           filter: `user_high=eq.${userId}`,
         },
         () => invalidate(queryKeys.friends),
       )
       .on(
-        "postgres_changes",
+        'postgres_changes',
         {
-          event: "UPDATE",
-          schema: "public",
-          table: "friendships",
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'friendships',
           filter: `user_low=eq.${userId}`,
         },
         () => invalidate(queryKeys.friends, queryKeys.freeNow),
       )
       .on(
-        "postgres_changes",
+        'postgres_changes',
         {
-          event: "UPDATE",
-          schema: "public",
-          table: "friendships",
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'friendships',
           filter: `user_high=eq.${userId}`,
         },
         () => invalidate(queryKeys.friends, queryKeys.freeNow),
       )
-      .on(
-        "postgres_changes",
-        { event: "UPDATE", schema: "public", table: "availabilities" },
-        () => invalidate(queryKeys.freeNow, queryKeys.meetups),
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'availabilities' }, () =>
+        invalidate(queryKeys.freeNow, queryKeys.meetups),
       )
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "availability_joins" },
-        () =>
-          invalidate(queryKeys.freeNow, queryKeys.status, queryKeys.meetups),
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'availability_joins' }, () =>
+        invalidate(queryKeys.freeNow, queryKeys.status, queryKeys.meetups),
       )
-      .on(
-        "postgres_changes",
-        { event: "INSERT", schema: "public", table: "meetup_messages" },
-        (payload) => {
-          const availabilityId = (payload.new as { availability_id?: string })
-            .availability_id;
-          invalidate(queryKeys.meetups);
-          if (availabilityId) invalidate(queryKeys.thread(availabilityId));
-        },
-      )
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'meetup_messages' }, (payload) => {
+        const availabilityId = (payload.new as { availability_id?: string }).availability_id;
+        invalidate(queryKeys.meetups);
+        if (availabilityId) invalidate(queryKeys.thread(availabilityId));
+      })
       .subscribe();
 
     return () => {

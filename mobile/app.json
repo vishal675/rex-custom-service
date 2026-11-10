@@ -47,7 +47,11 @@
       [
         "expo-notifications",
         {
-          "defaultChannel": "default"
+          "defaultChannel": "default",
+          "sounds": [
+            "./assets/sounds/vybe_free.wav",
+            "./assets/sounds/vybe_message.wav"
+          ]
         }
       ]
     ],

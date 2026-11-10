@@ -128,7 +128,11 @@ function CircleForm({
               left={<Avatar name={f.displayName} />}
               title={f.displayName}
               subtitle={`@${f.username}`}
-              right={<Text variant="bodyStrong" tone={on ? 'accent' : 'muted'}>{on ? '✓' : '+'}</Text>}
+              right={
+                <Text variant="bodyStrong" tone={on ? 'accent' : 'muted'}>
+                  {on ? '✓' : '+'}
+                </Text>
+              }
             />
           );
         })

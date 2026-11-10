@@ -1,13 +1,6 @@
 import { describe, expect, it } from '@jest/globals';
 
-import {
-  computeExpiry,
-  formatRemaining,
-  isActive,
-  remainingFraction,
-  remainingMs,
-  startAvailability,
-} from '../model';
+import { computeExpiry, formatRemaining, isActive, remainingFraction, remainingMs, startAvailability } from '../model';
 
 const MIN = 60_000;
 // 14:00 local time

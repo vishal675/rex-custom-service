@@ -38,7 +38,10 @@ export default function FriendsScreen() {
   const freeIds = new Set((freeNow.data ?? []).filter((f) => f.expiresAt > now).map((f) => f.userId));
 
   const openUser = (f: Friend) =>
-    router.push({ pathname: '/user/[id]', params: { id: f.id, name: f.displayName, username: f.username, status: f.status, avatar: f.avatarPath ?? '' } });
+    router.push({
+      pathname: '/user/[id]',
+      params: { id: f.id, name: f.displayName, username: f.username, status: f.status, avatar: f.avatarPath ?? '' },
+    });
 
   const newGroup = () => {
     if (!isPremium && circles.length >= 2) {
@@ -95,7 +98,9 @@ export default function FriendsScreen() {
         (friends.length === 0 ? (
           <Empty
             text={friendsQuery.isPending ? 'Loading…' : 'No friends yet. Add people by their username.'}
-            action={friendsQuery.isPending ? undefined : { label: 'Add a friend', onPress: () => router.push('/add-friend') }}
+            action={
+              friendsQuery.isPending ? undefined : { label: 'Add a friend', onPress: () => router.push('/add-friend') }
+            }
           />
         ) : (
           friends.map((f) => {
@@ -173,7 +178,9 @@ export default function FriendsScreen() {
               left={<Avatar name={r.displayName} path={r.avatarPath} />}
               title={r.displayName}
               subtitle={`@${r.username} · pending`}
-              right={<Button size="sm" variant="secondary" label="Cancel" onPress={() => run(remove.mutateAsync(r.id))} />}
+              right={
+                <Button size="sm" variant="secondary" label="Cancel" onPress={() => run(remove.mutateAsync(r.id))} />
+              }
             />
           ))}
         </>
