@@ -6,15 +6,18 @@ _Last updated: 2026-11-07_
 
 | Topic | Decision |
 |---|---|
-| Market | India first, campus-by-campus launch |
+| Market | India first, then global 1–2 weeks later (see `VYBE_AUDIT_AND_ROADMAP.md`) |
 | Mobile | Expo SDK 58, React Native, TypeScript, Expo Router (native tabs) |
 | Backend | Supabase — Postgres + RLS, Auth, Realtime, Storage, Edge Functions |
-| Login (MVP) | **Email + password.** Phone OTP added later (needs SMS provider + DLT registration) |
+| Login | **Apple, Google, email OTP, phone OTP — all before launch** (phone OTP needs DLT registration or Twilio Verify) |
 | Contact discovery | Deferred until phone numbers are **verified** by OTP — matching unverified numbers would let anyone claim someone else's number |
 | Chat | Meetup chats only in MVP; full 1:1 / group chat in v1.1 |
 | Push | Expo Push Service → FCM / APNs |
 | Expiry | `expires_at` column; reads filter on it (no timers) |
-| Name | **Pingo** (working name, may change) (`mobile/src/constants/app.ts`, `mobile/app.json`) |
+| Name | **VYBE** (pending trademark check); bundle ID `app.vybe.mobile` |
+| Payments | RevenueCat + Apple IAP + Google Play Billing; 7-day trial on annual |
+| Age | 18+ |
+| Branches | Work + test on `uat` (UAT DB) → promote to `prod` (prod DB) |
 | Supabase project | ref `qwbqzasmyatjnmnuwrun` |
 
 ## Milestones
