@@ -1,4 +1,4 @@
-import Constants from 'expo-constants';
+import Constants, { ExecutionEnvironment } from 'expo-constants';
 import * as Device from 'expo-device';
 import * as Notifications from 'expo-notifications';
 import { AndroidImportance } from 'expo-notifications';
@@ -29,6 +29,8 @@ function projectId(): string | undefined {
  */
 export async function registerForPush(): Promise<string | null> {
   if (!Device.isDevice) return null;
+  // Expo Go can't receive this app's remote pushes (and on Android doesn't support them at all).
+  if (Constants.executionEnvironment === ExecutionEnvironment.StoreClient) return null;
   const id = projectId();
   if (!id) return null;
 

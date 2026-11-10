@@ -69,6 +69,7 @@ export default function EditProfileScreen() {
       <ScrollView
         style={{ backgroundColor: colors.background }}
         contentContainerStyle={styles.content}
+        contentInsetAdjustmentBehavior="automatic"
         keyboardShouldPersistTaps="handled">
         <View style={styles.photo}>
           <Avatar name={name || '?'} path={avatarPath} size={96} />

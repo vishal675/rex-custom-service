@@ -101,6 +101,7 @@ function CircleForm({
     <ScrollView
       style={{ backgroundColor: colors.background }}
       contentContainerStyle={styles.content}
+      contentInsetAdjustmentBehavior="automatic"
       keyboardShouldPersistTaps="handled">
       <Stack.Screen options={{ title: id ? 'Edit group' : 'New group' }} />
       <TextField label="NAME" value={name} onChangeText={setName} placeholder="College gang" maxLength={40} />

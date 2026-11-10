@@ -1,4 +1,5 @@
 import { Stack, useLocalSearchParams } from 'expo-router';
+import { useHeaderHeight } from 'expo-router/react-navigation';
 import { useState } from 'react';
 import { Alert, FlatList, KeyboardAvoidingView, Platform, Pressable, StyleSheet, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -18,6 +19,9 @@ export default function MeetupChatScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
+  // iOS draws the navigation bar over the content; the inverted list can't use automatic insets, so pad manually.
+  const headerHeight = useHeaderHeight();
+  const topPad = Platform.OS === 'ios' ? headerHeight : 0;
   const { userId } = useSession();
   const now = useNow(15_000);
   const meetups = useMeetups();
@@ -60,7 +64,7 @@ export default function MeetupChatScreen() {
 
   if (thread.isError) {
     return (
-      <View style={[styles.center, { backgroundColor: colors.background }]}>
+      <View style={[styles.center, { backgroundColor: colors.background, paddingTop: topPad }]}>
         <Stack.Screen options={{ title: 'Chat' }} />
         <Text variant="body" tone="muted">
           {errorMessage(thread.error)}
@@ -71,9 +75,9 @@ export default function MeetupChatScreen() {
 
   return (
     <KeyboardAvoidingView
-      style={[styles.flex, { backgroundColor: colors.background }]}
+      style={[styles.flex, { backgroundColor: colors.background, paddingTop: topPad }]}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-      keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}>
+      keyboardVerticalOffset={0}>
       <Stack.Screen options={{ title: meetup ? meetupTitle(meetup, userId) : 'Chat' }} />
       {names ? (
         <Text variant="caption" tone="muted" style={styles.people} numberOfLines={1}>
