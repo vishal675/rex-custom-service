@@ -35,6 +35,18 @@ _Last updated: 2026-11-07_
 
 All data is mocked. Nothing is saved or sent yet.
 
+### ⏳ Phase 3a — Backend foundations (UAT)
+- [x] Core schema on UAT (`supabase/migrations/20261110120000_core_schema.sql`): profiles, settings, friendships, blocks, circles, availabilities, recipients, joins, meetup chat, push tokens, reports, entitlements, subscription events, avatars bucket
+- [x] RLS on every table, anon has no access, least-privilege column grants
+- [x] Server-side RPCs: onboarding (18+ check, DOB not stored), friend requests, block/unblock, go_free (server clock + user timezone, server-resolved audience, rate limit), free_now, join/leave, my_status (incl. server time), push token registration
+- [x] Free tier: 2 circles; Premium unlimited; lapse enforcement — all server-side
+- [x] SQL security tests (`supabase/tests/`, run `supabase/scripts/test-db.sh`) — 12 groups pass on UAT
+- [ ] Auth providers configured (email OTP, Apple, Google, phone via Twilio)
+- [ ] App wired to Supabase (session, onboarding, friends, go free, free now)
+- [ ] EAS dev builds, Sentry, CI
+
+> Note: new tables must `revoke all ... from anon, authenticated` and grant explicitly — Supabase's default privileges grant everything.
+
 ### ⏳ Milestone 2 — Auth & profiles (Stage 3)
 - [ ] Link Supabase project; first migration: `profiles` + RLS
 - [ ] Email/password sign up, log in, log out, password reset
