@@ -1,5 +1,5 @@
-import { router } from 'expo-router';
-import { useState } from 'react';
+import { router, useFocusEffect } from 'expo-router';
+import { useCallback, useState } from 'react';
 import { Alert, StyleSheet, View } from 'react-native';
 
 import { Avatar } from '@/components/ui/avatar';
@@ -47,6 +47,14 @@ export default function FriendsScreen() {
     }
     router.push({ pathname: '/circle/[id]', params: { id: 'new' } });
   };
+
+  // Refresh whenever the tab is opened (e.g. a request was accepted on the other phone).
+  const { refetch: refetchFriends } = friendsQuery;
+  useFocusEffect(
+    useCallback(() => {
+      refetchFriends();
+    }, [refetchFriends]),
+  );
 
   const run = (p: Promise<unknown>) => p.catch((e) => Alert.alert("Couldn't update", errorMessage(e)));
 

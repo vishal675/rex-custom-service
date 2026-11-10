@@ -14,6 +14,7 @@ export function useFriends() {
   return useQuery({
     queryKey: queryKeys.friends,
     enabled: !!userId,
+    refetchInterval: 60_000, // safety net; realtime + tab focus usually refresh sooner
     queryFn: async (): Promise<Friend[]> => {
       const { data, error } = await supabase.rpc('my_friends');
       if (error) throw error;
