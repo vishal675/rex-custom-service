@@ -1,46 +1,60 @@
 import * as Haptics from 'expo-haptics';
-import { useState } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { Alert, StyleSheet, View } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 
 import { Avatar } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Text } from '@/components/ui/text';
-import type { Friend } from '@/features/friends/mock-data';
+import { errorMessage } from '@/lib/errors';
 import { radius, spacing } from '@/theme/tokens';
 import { useTheme } from '@/theme/use-theme';
 
+import { useJoin } from './api';
 import { formatRemaining, getActivity } from './model';
+import type { FreeNowItem } from './server';
 
-type Props = { friend: Friend; now: number; index: number };
+type Props = { item: FreeNowItem; now: number; index: number };
 
-export function FreeFriendCard({ friend, now, index }: Props) {
+export function FreeFriendCard({ item, now, index }: Props) {
   const { colors } = useTheme();
-  const [joined, setJoined] = useState(false);
-  const activity = getActivity(friend.activity);
-  const left = formatRemaining((friend.freeUntil ?? now) - now);
+  const join = useJoin();
+  const activity = getActivity(item.activity);
+  const left = formatRemaining(item.expiresAt - now);
+  const others = item.joinCount - (item.joined ? 1 : 0);
+
+  const toggle = () => {
+    const joining = !item.joined;
+    join.mutate(
+      { availabilityId: item.availabilityId, join: joining },
+      {
+        onSuccess: () => {
+          if (joining) Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        },
+        onError: (e) => Alert.alert("Couldn't update", errorMessage(e)),
+      },
+    );
+  };
 
   return (
     <Animated.View
       entering={FadeInDown.delay(index * 60).springify().damping(18)}
       style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-      <Avatar name={friend.name} free size={44} />
+      <Avatar name={item.displayName} free size={44} />
       <View style={styles.body}>
         <Text variant="bodyStrong" numberOfLines={1}>
-          {friend.name.split(' ')[0]}
+          {item.displayName.split(' ')[0]}
         </Text>
         <Text variant="caption" tone="muted" numberOfLines={1}>
           {activity ? `${activity.emoji} ${activity.label}` : 'Free to hang'} · {left} left
+          {others > 0 ? ` · ${others} in` : ''}
         </Text>
       </View>
       <Button
         size="sm"
-        variant={joined ? 'secondary' : 'primary'}
-        label={joined ? "You're in ✓" : "I'm in"}
-        onPress={() => {
-          setJoined((j) => !j);
-          if (!joined) Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-        }}
+        variant={item.joined ? 'secondary' : 'primary'}
+        label={item.joined ? "You're in ✓" : "I'm in"}
+        loading={join.isPending}
+        onPress={toggle}
       />
     </Animated.View>
   );

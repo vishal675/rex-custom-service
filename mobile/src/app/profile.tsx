@@ -4,7 +4,8 @@ import { Avatar } from '@/components/ui/avatar';
 import { Icon, type IconName } from '@/components/ui/icon';
 import { ListRow } from '@/components/ui/list-row';
 import { Text } from '@/components/ui/text';
-import { MOCK_ME } from '@/constants/app';
+import { signOut, useProfile } from '@/features/auth/session';
+import { useAvailability } from '@/features/availability/availability-context';
 import { radius, spacing } from '@/theme/tokens';
 import { useTheme } from '@/theme/use-theme';
 
@@ -12,13 +13,22 @@ const ROWS: { icon: IconName; title: string; subtitle: string }[] = [
   { icon: 'person', title: 'Edit profile', subtitle: 'Photo, name, username' },
   { icon: 'lock', title: 'Privacy', subtitle: 'Who sees when you’re free' },
   { icon: 'bell', title: 'Notifications', subtitle: 'Muted friends, quiet hours' },
-  { icon: 'block', title: 'Blocked users', subtitle: 'None' },
+  { icon: 'block', title: 'Blocked users', subtitle: 'Manage people you’ve blocked' },
   { icon: 'qr', title: 'My QR code', subtitle: 'Let friends scan to add you' },
 ];
 
 export default function ProfileScreen() {
   const { colors } = useTheme();
-  const soon = () => Alert.alert('Coming soon', 'Settings arrive with accounts in Stage 3.');
+  const profile = useProfile();
+  const { isPremium } = useAvailability();
+  const soon = () => Alert.alert('Coming soon', 'This setting arrives in an upcoming build.');
+  const name = profile.data?.displayName ?? '';
+
+  const confirmSignOut = () =>
+    Alert.alert('Log out?', undefined, [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Log out', style: 'destructive', onPress: () => signOut() },
+    ]);
 
   return (
     <ScrollView
@@ -26,10 +36,11 @@ export default function ProfileScreen() {
       contentContainerStyle={styles.content}
       contentInsetAdjustmentBehavior="automatic">
       <View style={styles.hero}>
-        <Avatar name={MOCK_ME.name} size={88} />
-        <Text variant="title">{MOCK_ME.name}</Text>
+        <Avatar name={name || '?'} size={88} />
+        <Text variant="title">{name}</Text>
         <Text variant="body" tone="muted">
-          @{MOCK_ME.username}
+          @{profile.data?.username ?? ''}
+          {isPremium ? ' · Premium' : ''}
         </Text>
       </View>
 
@@ -47,7 +58,13 @@ export default function ProfileScreen() {
       </View>
 
       <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-        <ListRow onPress={soon} left={<Icon name="logout" color={colors.danger} />} title="Log out" />
+        <ListRow onPress={confirmSignOut} left={<Icon name="logout" color={colors.danger} />} title="Log out" />
+        <ListRow
+          onPress={soon}
+          left={<Icon name="block" color={colors.danger} />}
+          title="Delete account"
+          subtitle="Permanently delete your account and data"
+        />
       </View>
     </ScrollView>
   );

@@ -1,6 +1,6 @@
 import * as Haptics from 'expo-haptics';
 import { Link, router } from 'expo-router';
-import { StyleSheet, View } from 'react-native';
+import { Alert, StyleSheet, View } from 'react-native';
 import Animated, { FadeIn, FadeOut } from 'react-native-reanimated';
 
 import { Avatar } from '@/components/ui/avatar';
@@ -8,32 +8,66 @@ import { Button } from '@/components/ui/button';
 import { PressableScale } from '@/components/ui/pressable-scale';
 import { Screen } from '@/components/ui/screen';
 import { Text } from '@/components/ui/text';
-import { APP_NAME, MOCK_ME } from '@/constants/app';
+import { APP_NAME } from '@/constants/app';
+import { useProfile } from '@/features/auth/session';
+import { useFreeNow, useMyStatus } from '@/features/availability/api';
 import { useAvailability } from '@/features/availability/availability-context';
 import { FreeButton } from '@/features/availability/free-button';
 import { FreeFriendCard } from '@/features/availability/free-friend-card';
-import { formatRemaining, getActivity, remainingFraction, remainingMs } from '@/features/availability/model';
-import { MOCK_FRIENDS, audienceSize } from '@/features/friends/mock-data';
+import {
+  formatRemaining,
+  getActivity,
+  isActive,
+  remainingFraction,
+  remainingMs,
+} from '@/features/availability/model';
+import { useNow } from '@/hooks/use-now';
+import { errorMessage } from '@/lib/errors';
 import { fonts, palette, spacing } from '@/theme/tokens';
 
 export default function HomeScreen() {
-  const { current, lastSettings, now, goFree, goBusy } = useAvailability();
-  const freeFriends = MOCK_FRIENDS.filter((f) => f.freeUntil && f.freeUntil > now);
-  const activity = getActivity(current?.activity);
+  const now = useNow(1000);
+  const { availability, lastSettings, goFree, goBusy, isSaving } = useAvailability();
+  const profile = useProfile();
+  const status = useMyStatus();
+  const freeNow = useFreeNow();
 
-  const reuseLast = () => {
-    if (current) return;
-    goFree(lastSettings);
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+  const current = isActive(availability, now) ? availability : null;
+  const freeFriends = (freeNow.data ?? []).filter((f) => f.expiresAt > now);
+  const activity = getActivity(current?.activity);
+  const myName = profile.data?.displayName ?? '';
+
+  const reuseLast = async () => {
+    if (current || isSaving) return;
+    try {
+      await goFree(lastSettings);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    } catch (e) {
+      Alert.alert("Couldn't go free", errorMessage(e));
+    }
+  };
+
+  const busy = async () => {
+    try {
+      await goBusy();
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    } catch (e) {
+      Alert.alert("Couldn't update", errorMessage(e));
+    }
   };
 
   return (
-    <Screen>
+    <Screen
+      onRefresh={() => {
+        status.refetch();
+        freeNow.refetch();
+      }}
+      refreshing={freeNow.isRefetching}>
       <View style={styles.header}>
         <Text style={styles.wordmark}>{APP_NAME}</Text>
         <Link href="/profile" asChild>
           <PressableScale accessibilityRole="button" accessibilityLabel="Profile and settings">
-            <Avatar name={MOCK_ME.name} size={36} />
+            <Avatar name={myName || '?'} size={36} />
           </PressableScale>
         </Link>
       </View>
@@ -51,17 +85,10 @@ export default function HomeScreen() {
         {current ? (
           <Animated.View entering={FadeIn} exiting={FadeOut} style={styles.status}>
             <Text variant="caption" tone="muted">
-              Notified {audienceSize(current.audience)} friends
+              Notified {current.recipientCount} {current.recipientCount === 1 ? 'friend' : 'friends'}
+              {current.joinCount > 0 ? ` · ${current.joinCount} in` : ''}
             </Text>
-            <Button
-              variant="secondary"
-              label="I'M BUSY"
-              onPress={() => {
-                goBusy();
-                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-              }}
-              style={styles.busy}
-            />
+            <Button variant="secondary" label="I'M BUSY" onPress={busy} loading={isSaving} style={styles.busy} />
           </Animated.View>
         ) : (
           <Animated.View entering={FadeIn} exiting={FadeOut} style={styles.status}>
@@ -79,12 +106,16 @@ export default function HomeScreen() {
         </Text>
       </View>
 
-      {freeFriends.length === 0 ? (
+      {freeNow.isError ? (
+        <Text variant="body" tone="danger">
+          {errorMessage(freeNow.error)}
+        </Text>
+      ) : freeFriends.length === 0 ? (
         <Text variant="body" tone="muted">
-          No one yet. Be the first — tap the button.
+          {freeNow.isPending ? 'Checking…' : 'No one yet. Be the first — tap the button.'}
         </Text>
       ) : (
-        freeFriends.map((f, i) => <FreeFriendCard key={f.id} friend={f} now={now} index={i} />)
+        freeFriends.map((f, i) => <FreeFriendCard key={f.availabilityId} item={f} now={now} index={i} />)
       )}
     </Screen>
   );

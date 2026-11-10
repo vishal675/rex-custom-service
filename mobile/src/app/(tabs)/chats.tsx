@@ -1,49 +1,26 @@
 import { StyleSheet, View } from 'react-native';
 
-import { ListRow } from '@/components/ui/list-row';
 import { Screen } from '@/components/ui/screen';
 import { Text } from '@/components/ui/text';
-import { MOCK_MEETUPS } from '@/features/friends/mock-data';
-import { radius } from '@/theme/tokens';
-import { useTheme } from '@/theme/use-theme';
+import { spacing } from '@/theme/tokens';
 
+/** Meetup chat UI arrives in Phase 3e. The backend (meetup_messages + RLS) is already in place. */
 export default function ChatsScreen() {
-  const { colors } = useTheme();
-
   return (
     <Screen title="Chats">
-      <Text variant="caption" tone="muted">
-        Meetup chats open when friends say “I&apos;m in” and close when the plan expires.
-      </Text>
-      {MOCK_MEETUPS.map((m) => (
-        <ListRow
-          key={m.id}
-          onPress={() => {}}
-          left={
-            <View style={[styles.emoji, { backgroundColor: colors.surfaceRaised }]}>
-              <Text style={styles.emojiText}>{m.emoji}</Text>
-            </View>
-          }
-          title={m.title}
-          subtitle={m.lastMessage}
-          right={
-            <Text variant="caption" tone="accent">
-              {m.expiresInMin}m
-            </Text>
-          }
-        />
-      ))}
+      <View style={styles.empty}>
+        <Text style={styles.emoji}>💬</Text>
+        <Text variant="heading">Meetup chats are coming</Text>
+        <Text variant="body" tone="muted" style={styles.center}>
+          When friends say “I&apos;m in”, you&apos;ll plan the details here. Chats close when the plan ends.
+        </Text>
+      </View>
     </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  emoji: {
-    width: 48,
-    height: 48,
-    borderRadius: radius.md,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  emojiText: { fontSize: 22, lineHeight: 28 },
+  empty: { alignItems: 'center', gap: spacing.md, paddingTop: spacing.xxxl },
+  emoji: { fontSize: 40, lineHeight: 48 },
+  center: { textAlign: 'center' },
 });

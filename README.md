@@ -20,6 +20,20 @@ npm start          # scan the QR code with your phone camera (iOS) or Expo Go (A
 
 Your phone and Mac must be on the same Wi-Fi. If it can't connect, run `npx expo start --tunnel`.
 
+## Testing on UAT
+
+The app talks to the **UAT** Supabase project. To sign in during testing (until custom email is set up):
+
+1. In the app, enter any email and tap **I have a test code** (development builds only).
+2. In a terminal: `supabase/scripts/dev-login-code.sh that@email.com` — prints the 6-digit code.
+
+Use two phones (or a phone + simulator) with two emails to test friends and "I'm free".
+
+```bash
+supabase/scripts/test-db.sh      # SQL security tests (rolled back, leaves no data)
+node supabase/scripts/smoke.mjs  # end-to-end API test with two throwaway users
+```
+
 ## Checks
 
 ```bash

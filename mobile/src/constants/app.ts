@@ -1,5 +1,3 @@
-/** Working name — change here (and in app.json) once the final brand is chosen. */
-export const APP_NAME = 'Pingo';
-
-/** The signed-in user. Mocked until Stage 3 (auth). */
-export const MOCK_ME = { name: 'Vishal Pingua', username: 'vishal' };
+/** Product name (pending trademark check — see docs/VYBE_AUDIT_AND_ROADMAP.md, D7). */
+export const APP_NAME = 'VYBE';
+export const TAGLINE = 'Less planning. More living.';

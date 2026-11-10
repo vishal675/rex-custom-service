@@ -41,8 +41,12 @@ All data is mocked. Nothing is saved or sent yet.
 - [x] Server-side RPCs: onboarding (18+ check, DOB not stored), friend requests, block/unblock, go_free (server clock + user timezone, server-resolved audience, rate limit), free_now, join/leave, my_status (incl. server time), push token registration
 - [x] Free tier: 2 circles; Premium unlimited; lapse enforcement — all server-side
 - [x] SQL security tests (`supabase/tests/`, run `supabase/scripts/test-db.sh`) — 12 groups pass on UAT
-- [ ] Auth providers configured (email OTP, Apple, Google, phone via Twilio)
-- [ ] App wired to Supabase (session, onboarding, friends, go free, free now)
+- [x] Email one-time-code login on UAT (6 digits, 10 min). Session in the device keychain (SecureStore, chunked)
+- [ ] Custom SMTP (e.g. Resend) — required before real users: the free-plan mailer sends links only, to team members only, 2/hour
+- [ ] Apple, Google (need developer accounts) · Phone OTP (needs Twilio Account SID + Auth Token + Verify Service SID)
+- [x] App wired to Supabase: auth-guarded routing, onboarding (18+), Home (go free / busy / free now / join), Friends (add by username, requests, remove, block, report), Groups (create/edit/delete, 2 free), realtime refresh, server clock sync
+- [x] End-to-end smoke test through the real API (`node supabase/scripts/smoke.mjs`) — 22 checks pass on UAT
+- [ ] Meetup chat UI (backend ready) · Delete account (Edge Function) · Push notifications
 - [ ] EAS dev builds, Sentry, CI
 
 > Note: new tables must `revoke all ... from anon, authenticated` and grant explicitly — Supabase's default privileges grant everything.

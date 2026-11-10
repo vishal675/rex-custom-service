@@ -1,24 +1,24 @@
+import * as SecureStore from 'expo-secure-store';
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 
-import {
-  DEFAULT_DURATION,
-  isActive,
-  startAvailability,
-  type Availability,
-  type AvailabilitySettings,
-} from './model';
+import { useEndAvailability, useGoFree, useMyStatus } from './api';
+import { DEFAULT_DURATION, type Availability, type AvailabilitySettings } from './model';
 
 /**
- * Local (mock) availability state for the Stage 2 prototype.
- * In Stage 5 the same interface will be backed by the Supabase `go-free` function.
+ * The user's own availability, backed by the server (`my_status`, `go_free`, `end_availability`).
+ * `availability` may have just expired — check `isActive(availability, now)` where a live clock is shown.
+ * Last-used settings are remembered on the device so "hold to reuse last" works across launches.
  */
 type AvailabilityState = {
-  current: Availability | null;
+  availability: (Availability & { id: string; recipientCount: number; joinCount: number }) | null;
   lastSettings: AvailabilitySettings;
-  now: number;
-  goFree: (settings: AvailabilitySettings) => void;
-  goBusy: () => void;
+  isPremium: boolean;
+  goFree: (settings: AvailabilitySettings) => Promise<{ recipientCount: number }>;
+  goBusy: () => Promise<void>;
+  isSaving: boolean;
 };
+
+const LAST_SETTINGS_KEY = 'vybe.lastSettings';
 
 const DEFAULT_SETTINGS: AvailabilitySettings = {
   activity: null,
@@ -28,34 +28,63 @@ const DEFAULT_SETTINGS: AvailabilitySettings = {
 
 const AvailabilityContext = createContext<AvailabilityState | null>(null);
 
-/** Re-renders every `intervalMs` so countdowns stay live. */
-function useNow(intervalMs: number) {
-  const [now, setNow] = useState(() => Date.now());
-  useEffect(() => {
-    const id = setInterval(() => setNow(Date.now()), intervalMs);
-    return () => clearInterval(id);
-  }, [intervalMs]);
-  return now;
-}
-
 export function AvailabilityProvider({ children }: { children: ReactNode }) {
-  const [stored, setStored] = useState<Availability | null>(null);
+  const status = useMyStatus();
+  const goFreeMutation = useGoFree();
+  const endMutation = useEndAvailability();
   const [lastSettings, setLastSettings] = useState<AvailabilitySettings>(DEFAULT_SETTINGS);
-  const now = useNow(1000);
 
-  // Expiry is derived from time, never from a timer firing — so it can't get stuck "free".
-  const current = isActive(stored, now) ? stored : null;
-
-  const goFree = useCallback((settings: AvailabilitySettings) => {
-    setLastSettings(settings);
-    setStored(startAvailability(settings, new Date()));
+  useEffect(() => {
+    SecureStore.getItemAsync(LAST_SETTINGS_KEY)
+      .then((raw) => raw && setLastSettings({ ...DEFAULT_SETTINGS, ...JSON.parse(raw) }))
+      .catch(() => {});
   }, []);
 
-  const goBusy = useCallback(() => setStored(null), []);
+  const server = status.data?.availability ?? null;
+  const availability = useMemo(
+    () =>
+      server && {
+        id: server.id,
+        activity: server.activity,
+        duration: server.duration,
+        audience: server.audienceAll
+          ? { allFriends: true, circleIds: [] }
+          : { allFriends: false, circleIds: lastSettings.audience.circleIds },
+        startedAt: server.startedAt,
+        expiresAt: server.expiresAt,
+        recipientCount: server.recipientCount,
+        joinCount: server.joinCount,
+      },
+    [server, lastSettings.audience.circleIds],
+  );
+
+  const { mutateAsync: goFreeAsync } = goFreeMutation;
+  const { mutateAsync: endAsync } = endMutation;
+
+  const goFree = useCallback(
+    async (settings: AvailabilitySettings) => {
+      const result = await goFreeAsync(settings);
+      setLastSettings(settings);
+      SecureStore.setItemAsync(LAST_SETTINGS_KEY, JSON.stringify(settings)).catch(() => {});
+      return result;
+    },
+    [goFreeAsync],
+  );
+
+  const goBusy = useCallback(async () => {
+    await endAsync();
+  }, [endAsync]);
 
   const value = useMemo(
-    () => ({ current, lastSettings, now, goFree, goBusy }),
-    [current, lastSettings, now, goFree, goBusy],
+    () => ({
+      availability,
+      lastSettings,
+      isPremium: status.data?.isPremium ?? false,
+      goFree,
+      goBusy,
+      isSaving: goFreeMutation.isPending || endMutation.isPending,
+    }),
+    [availability, lastSettings, status.data?.isPremium, goFree, goBusy, goFreeMutation.isPending, endMutation.isPending],
   );
 
   return <AvailabilityContext.Provider value={value}>{children}</AvailabilityContext.Provider>;

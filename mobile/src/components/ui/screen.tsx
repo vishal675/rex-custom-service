@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { ScrollView, StyleSheet, View } from 'react-native';
+import { RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { spacing } from '@/theme/tokens';
@@ -12,10 +12,13 @@ type Props = {
   right?: ReactNode;
   children: ReactNode;
   scroll?: boolean;
+  /** Enables pull-to-refresh on scrolling screens. */
+  onRefresh?: () => void;
+  refreshing?: boolean;
 };
 
 /** Standard screen shell: safe area, page background, optional large title row. */
-export function Screen({ title, right, children, scroll = true }: Props) {
+export function Screen({ title, right, children, scroll = true, onRefresh, refreshing = false }: Props) {
   const { colors } = useTheme();
   const header = title ? (
     <View style={styles.header}>
@@ -29,7 +32,15 @@ export function Screen({ title, right, children, scroll = true }: Props) {
   return (
     <SafeAreaView edges={['top']} style={[styles.flex, { backgroundColor: colors.background }]}>
       {scroll ? (
-        <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+        <ScrollView
+          contentContainerStyle={styles.content}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+          refreshControl={
+            onRefresh ? (
+              <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.textMuted} />
+            ) : undefined
+          }>
           {header}
           {children}
         </ScrollView>
