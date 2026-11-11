@@ -10,7 +10,7 @@ _Last updated: 2026-11-10 · Branch: `uat` · Full roadmap & audit: [`VYBE_AUDIT
 
 **Do first next session**
 1. **Re-test on both phones** (reload in Expo Go) — check: Android Add friend / Friend / I'm free screens open; chat keyboard on Android; live friend-request updates; tab badges (Home / Chats / Friends); unread pill per chat.
-2. **Deploy Edge Functions to UAT** — `supabase/scripts/deploy-functions.sh` (was blocked by the permission check; run it yourself or approve it). Until then: *Delete account* errors and pushes are not sent (silent no-op).
+2. ~~Deploy Edge Functions to UAT~~ ✅ done 2026-11-11 (`delete-account`, `push`; push secret in Vault). Verified by smoke test + pg_net responses.
 3. **Pick the next track** (Claude's suggestion in order):
    - a. **Android dev build** (EAS) → real push notifications + custom sounds on Android. Needs a free **Firebase** project (`google-services.json`) and `eas init` (links an Expo project → `projectId`).
    - b. **Sentry** crash reporting.
@@ -29,6 +29,16 @@ _Last updated: 2026-11-10 · Branch: `uat` · Full roadmap & audit: [`VYBE_AUDIT
 ---
 
 ## How to run & test (UAT)
+
+**Testers without your Mac (Android):** install the VYBE test app (APK) from the EAS build link
+(Expo dashboard → project `@vishal675/vybe` → Builds). The installed app pulls new JS from the `uat` update channel on launch:
+
+```bash
+cd mobile && npm run update:uat -- --message "what changed"   # ship JS/UI changes to installed test apps (no reinstall)
+cd mobile && npm run build:android:uat                         # new APK — only needed after native changes (new native module, app.json plugins/permissions)
+```
+iPhone testers: Expo Go via `npm start` until the Apple Developer account exists (then an iOS internal build).
+
 
 ```bash
 cd mobile && npm start                               # scan QR: iPhone camera / Android inside Expo Go
@@ -61,7 +71,8 @@ then `npm run gen:types`. New tables must `revoke all … from anon, authenticat
 | Chat | Meetup chats (open when a friend joins, read-only after the plan ends, 24 h history) |
 | Push | DB trigger → pg_net → `push` Edge Function → Expo Push → APNs / FCM |
 | Expiry | Server clock (`now()`) + user's timezone; app syncs clock offset |
-| Name | **VYBE** (pending trademark check); bundle ID `app.vybe.mobile` (still `com.pingo.app` in `app.json` — change before first store upload) |
+| Name | **VYBE** (pending trademark check); app ID `app.vybe.mobile` set in `app.json` (can still change before the first store upload) |
+| EAS | Project `@vishal675/vybe` (ID `f2a9bdf9-…`); profiles `preview` (Android APK, channel `uat`) and `production`; runtime version = fingerprint |
 | Payments | RevenueCat + Apple IAP + Google Play Billing; 7-day trial on annual |
 | Free vs Premium | Free: everything social + 2 groups. Premium: unlimited groups (+ more later). Enforced server-side |
 | Branches | All work + testing on `uat` (UAT DB) → when UAT passes, merge to `prod` and apply migrations to prod DB |

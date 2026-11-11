@@ -57,7 +57,9 @@
     "lint": "expo lint",
     "test": "jest",
     "typecheck": "tsc --noEmit",
-    "gen:types": "cd .. && npx -y supabase@latest gen types --lang typescript --linked > mobile/src/lib/database.types.tmp && mv mobile/src/lib/database.types.tmp mobile/src/lib/database.types.ts && cd mobile && npx -y prettier --write src/lib/database.types.ts"
+    "gen:types": "cd .. && npx -y supabase@latest gen types --lang typescript --linked > mobile/src/lib/database.types.tmp && mv mobile/src/lib/database.types.tmp mobile/src/lib/database.types.ts && cd mobile && npx -y prettier --write src/lib/database.types.ts",
+    "build:android:uat": "npx -y eas-cli@latest build --platform android --profile preview",
+    "update:uat": "npx -y eas-cli@latest update --channel uat --environment preview"
   },
   "private": true,
   "jest": {
