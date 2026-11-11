@@ -21,10 +21,6 @@
       "predictiveBackGestureEnabled": false,
       "package": "app.vybe.mobile"
     },
-    "web": {
-      "output": "server",
-      "favicon": "./assets/images/favicon.png"
-    },
     "plugins": [
       "expo-router",
       [
@@ -75,6 +71,10 @@
     },
     "updates": {
       "url": "https://u.expo.dev/f2a9bdf9-b557-4f8e-b0b1-b1a977218c85"
-    }
+    },
+    "platforms": [
+      "ios",
+      "android"
+    ]
   }
 }
