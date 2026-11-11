@@ -88,6 +88,8 @@ try {
       })
       .subscribe(async (status) => {
         if (status === 'SUBSCRIBED') {
+          // SUBSCRIBED can arrive just before postgres_changes is fully attached.
+          await new Promise((r) => setTimeout(r, 1500));
           must(await B.client.from('meetup_messages').insert({ availability_id: fn[0].availability_id, body: 'On my way' }), 'message');
         }
       });
@@ -131,6 +133,14 @@ try {
   check('block hides free status', must(await B.client.rpc('free_now'), 'free_now').length === 0);
   check('block removes friendship', must(await A.client.rpc('my_friends'), 'friends').length === 0);
   check('blocked user cannot find blocker', must(await A.client.rpc('find_user', { p_username: users[1].username }), 'find').length === 0);
+
+  // Delete account through the real Edge Function (B deletes themself).
+  const del = await B.client.functions.invoke('delete-account', { method: 'POST' });
+  check('delete-account function succeeds', !del.error && del.data?.deleted === true, JSON.stringify(del.error ?? del.data));
+  const afterDelete = await A.client.rpc('find_user', { p_username: users[1].username });
+  check('deleted user is gone', (afterDelete.data ?? []).length === 0);
+  const delAgain = await createClient(URL_, KEY, { auth: { persistSession: false } }).functions.invoke('delete-account', { method: 'POST' });
+  check('delete-account rejects signed-out callers', !!delAgain.error);
 
   const anon = createClient(URL_, KEY, { auth: { persistSession: false } });
   const an = await anon.rpc('free_now');

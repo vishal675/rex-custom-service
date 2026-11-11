@@ -1,15 +1,15 @@
 {
   "expo": {
-    "name": "Pingo",
-    "slug": "pingo",
+    "name": "VYBE",
+    "slug": "vybe",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "pingo",
+    "scheme": "vybe",
     "userInterfaceStyle": "automatic",
     "ios": {
       "icon": "./assets/expo.icon",
-      "bundleIdentifier": "com.pingo.app"
+      "bundleIdentifier": "app.vybe.mobile"
     },
     "android": {
       "adaptiveIcon": {
@@ -19,7 +19,7 @@
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
       "predictiveBackGestureEnabled": false,
-      "package": "com.pingo.app"
+      "package": "app.vybe.mobile"
     },
     "web": {
       "output": "server",
@@ -58,6 +58,23 @@
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
+    },
+    "extra": {
+      "router": {
+        "asyncRoutes": {
+          "web": true
+        }
+      },
+      "eas": {
+        "projectId": "f2a9bdf9-b557-4f8e-b0b1-b1a977218c85"
+      }
+    },
+    "owner": "vishal675",
+    "runtimeVersion": {
+      "policy": "fingerprint"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/f2a9bdf9-b557-4f8e-b0b1-b1a977218c85"
     }
   }
 }
