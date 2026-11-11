@@ -6,3 +6,6 @@
 
 .DS_Store
 node_modules/
+
+# Firebase / Google service-account private keys — never commit
+*firebase-adminsdk*.json

@@ -19,7 +19,8 @@
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
       "predictiveBackGestureEnabled": false,
-      "package": "app.vybe.mobile"
+      "package": "app.vybe.mobile",
+      "googleServicesFile": "./google-services.json"
     },
     "plugins": [
       "expo-router",
