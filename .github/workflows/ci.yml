@@ -31,6 +31,17 @@ jobs:
       - run: npm run lint
       - run: npm test -- --ci
 
+  functions:
+    name: Edge Function unit tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - run: node --test supabase/functions/_shared/*.test.ts
+
   secrets-scan:
     name: No secrets committed
     runs-on: ubuntu-latest
@@ -41,6 +52,6 @@ jobs:
         run: |
           set -e
           if git ls-files | grep -E '(^|/)\.env(\.local)?$'; then echo "::error::.env file is tracked"; exit 1; fi
-          if git grep -nE 'sb_secret_[A-Za-z0-9_-]{10,}|sbp_[a-f0-9]{30,}|SK[a-f0-9]{32}|service_role"?\s*[:=]\s*"?eyJ' -- ':!*.md' ':!.github/workflows/ci.yml'; then
+          if git grep -nE 'sb_secret_[A-Za-z0-9_-]{10,}|sbp_[a-f0-9]{30,}|SK[a-f0-9]{32}|sk_[A-Za-z0-9]{20,}|service_role"?\s*[:=]\s*"?eyJ' -- ':!*.md' ':!.github/workflows/ci.yml'; then
             echo "::error::Possible secret committed"; exit 1
           fi

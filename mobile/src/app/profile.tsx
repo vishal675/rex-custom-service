@@ -1,6 +1,6 @@
-import { router } from 'expo-router';
+import { router, type Href } from 'expo-router';
 import { useState } from 'react';
-import { ActivityIndicator, Alert, ScrollView, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, Alert, ScrollView, Share, StyleSheet, View } from 'react-native';
 
 import { Avatar } from '@/components/ui/avatar';
 import { Icon, type IconName } from '@/components/ui/icon';
@@ -13,18 +13,16 @@ import { errorMessage } from '@/lib/errors';
 import { radius, spacing } from '@/theme/tokens';
 import { useTheme } from '@/theme/use-theme';
 
-const ROWS: { icon: IconName; title: string; subtitle: string }[] = [
-  { icon: 'lock', title: 'Privacy', subtitle: 'Who sees when you’re free' },
-  { icon: 'bell', title: 'Notifications', subtitle: 'Muted friends, quiet hours' },
-  { icon: 'block', title: 'Blocked users', subtitle: 'Manage people you’ve blocked' },
-  { icon: 'qr', title: 'My QR code', subtitle: 'Let friends scan to add you' },
+const ROWS: { icon: IconName; title: string; subtitle: string; href: Href }[] = [
+  { icon: 'bell', title: 'Notifications', subtitle: 'On/off, quiet hours, sounds', href: '/settings/notifications' },
+  { icon: 'lock', title: 'Privacy', subtitle: 'Who sees what', href: '/settings/privacy' },
+  { icon: 'block', title: 'Blocked users', subtitle: 'Manage people you’ve blocked', href: '/settings/blocked' },
 ];
 
 export default function ProfileScreen() {
   const { colors } = useTheme();
   const profile = useProfile();
   const { isPremium } = useAvailability();
-  const soon = () => Alert.alert('Coming soon', 'This setting arrives in an upcoming build.');
   const name = profile.data?.displayName ?? '';
   const [deleting, setDeleting] = useState(false);
 
@@ -51,6 +49,12 @@ export default function ProfileScreen() {
       ],
     );
 
+  const shareUsername = () => {
+    const me = profile.data?.username;
+    if (!me) return;
+    Share.share({ message: `Add me on VYBE: @${me}` }).catch(() => {});
+  };
+
   const confirmSignOut = () =>
     Alert.alert('Log out?', undefined, [
       { text: 'Cancel', style: 'cancel' },
@@ -73,6 +77,16 @@ export default function ProfileScreen() {
 
       <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}>
         <ListRow
+          onPress={() => router.push('/premium')}
+          left={<Icon name="premium" color={colors.accentText} />}
+          title={isPremium ? 'VYBE Premium' : 'Get VYBE Premium'}
+          subtitle={isPremium ? 'Active · manage subscription' : 'Unlimited groups'}
+          right={<Icon name="chevronRight" size={16} color={colors.textMuted} />}
+        />
+      </View>
+
+      <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+        <ListRow
           onPress={() => router.push('/edit-profile')}
           left={<Icon name="person" />}
           title="Edit profile"
@@ -82,13 +96,19 @@ export default function ProfileScreen() {
         {ROWS.map((r) => (
           <ListRow
             key={r.title}
-            onPress={soon}
+            onPress={() => router.push(r.href)}
             left={<Icon name={r.icon} />}
             title={r.title}
             subtitle={r.subtitle}
             right={<Icon name="chevronRight" size={16} color={colors.textMuted} />}
           />
         ))}
+        <ListRow
+          onPress={shareUsername}
+          left={<Icon name="share" />}
+          title="Share my username"
+          subtitle={`@${profile.data?.username ?? ''} — so friends can add you`}
+        />
       </View>
 
       <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}>

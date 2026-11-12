@@ -1,7 +1,7 @@
 import * as Haptics from 'expo-haptics';
-import { router } from 'expo-router';
+import { router, Stack } from 'expo-router';
 import { useState } from 'react';
-import { Alert, ScrollView, StyleSheet, View } from 'react-native';
+import { Alert, Platform, ScrollView, StyleSheet, View } from 'react-native';
 
 import { Button } from '@/components/ui/button';
 import { Chip } from '@/components/ui/chip';
@@ -17,6 +17,7 @@ import {
 } from '@/features/availability/model';
 import { useCircles, useFriends } from '@/features/friends/api';
 import { audienceSize, usableCircleIds } from '@/features/friends/model';
+import { promptPremium } from '@/features/premium/prompt';
 import { serverNow } from '@/lib/clock';
 import { errorMessage, isPremiumRequired } from '@/lib/errors';
 import { spacing } from '@/theme/tokens';
@@ -45,7 +46,7 @@ export default function GoFreeSheet() {
 
   const toggleCircle = (id: string) => {
     if (!usable.has(id)) {
-      Alert.alert('VYBE Premium', 'The free plan includes 2 groups. Premium unlocks unlimited groups — coming soon.');
+      promptPremium();
       return;
     }
     setAudience((a) => {
@@ -64,10 +65,12 @@ export default function GoFreeSheet() {
         Alert.alert("You're free", 'None of your friends were notified — add friends to get started.');
       }
     } catch (e) {
-      Alert.alert(isPremiumRequired(e) ? 'VYBE Premium' : "Couldn't go free", errorMessage(e));
+      if (isPremiumRequired(e)) promptPremium();
+      else Alert.alert("Couldn't go free", errorMessage(e));
     }
   };
 
+  const title = current ? 'Update' : "What's the vibe?";
   const label = loading
     ? 'Loading…'
     : friendIds.length === 0
@@ -78,7 +81,8 @@ export default function GoFreeSheet() {
 
   return (
     <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-      <Text variant="title">{current ? 'Update' : "What's the vibe?"}</Text>
+      {/* Android: full screen with a header, so the title lives there instead of twice. */}
+      {Platform.OS === 'ios' ? <Text variant="title">{title}</Text> : <Stack.Screen options={{ title }} />}
 
       <Section title="ACTIVITY · OPTIONAL">
         {ACTIVITIES.map((a) => (
@@ -138,7 +142,7 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 }
 
 const styles = StyleSheet.create({
-  content: { padding: spacing.xl, paddingTop: spacing.xxl, gap: spacing.xl },
+  content: { padding: spacing.xl, paddingTop: Platform.OS === 'ios' ? spacing.xxl : spacing.lg, gap: spacing.xl },
   section: { gap: spacing.md },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
   submit: { marginTop: spacing.sm },

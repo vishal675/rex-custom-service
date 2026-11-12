@@ -1,21 +1,24 @@
 # Plan & progress
 
-_Last updated: 2026-11-10 · Branch: `uat` · Full roadmap & audit: [`VYBE_AUDIT_AND_ROADMAP.md`](VYBE_AUDIT_AND_ROADMAP.md)_
+_Last updated: 2026-11-12 · Branch: `uat` · Full roadmap & audit: [`VYBE_AUDIT_AND_ROADMAP.md`](VYBE_AUDIT_AND_ROADMAP.md)_
 
 ---
 
 ## ▶ Resume here (next session)
 
-**Where we stopped:** Phase 3 backend + app are built and running on UAT. Tested on a real iPhone and Android phone via Expo Go (two accounts: friends, I'm free, join, chat). Last work: tab badges, unread chats, app-icon badge, custom notification sounds.
+**Where we stopped (2026-11-12):** Android test app (APK) with real push is out. Then built: **settings screens**,
+**Sentry crash reporting**, **Premium paywall + RevenueCat** (server-verified), Android duplicate-title fix.
+Everything is code-complete and tested on the server; Sentry and payments stay **switched off until their keys are added**.
 
 **Do first next session**
-1. **Re-test on both phones** (reload in Expo Go) — check: Android Add friend / Friend / I'm free screens open; chat keyboard on Android; live friend-request updates; tab badges (Home / Chats / Friends); unread pill per chat.
-2. ~~Deploy Edge Functions to UAT~~ ✅ done 2026-11-11 (`delete-account`, `push`; push secret in Vault). Verified by smoke test + pg_net responses.
-3. **Pick the next track** (Claude's suggestion in order):
-   - a. **Android dev build** (EAS) → real push notifications + custom sounds on Android. Needs a free **Firebase** project (`google-services.json`) and `eas init` (links an Expo project → `projectId`).
-   - b. **Sentry** crash reporting.
-   - c. **Premium paywall UI** (RevenueCat SDK wired, no real purchases until store accounts exist).
-   - d. Tidy: Android shows the screen name twice on the full-screen "sheets" (header + in-page title).
+1. Install the **new APK** (native modules changed — the old one can't take this as an OTA update) and test on Android:
+   Profile → Notifications (toggle, quiet hours), Privacy, Blocked users (block someone → unblock), Share my username,
+   Get VYBE Premium (shows "coming soon" until RevenueCat keys exist), Add friend / I'm free (title shown once).
+2. Push test from the earlier build (iPhone goes free → Android chime; chat → pop; friend request).
+3. When keys arrive, follow **"Turning on Sentry / RevenueCat"** below.
+
+**Next tracks (suggested order):** phone OTP login (Twilio) · custom SMTP (Resend) · legal pages (needed on the paywall) ·
+iOS build once the Apple account exists · scheduled cleanup of chats older than 24 h (now only hidden, not deleted) · branding.
 
 **Waiting on you (no rush, but long lead times)**
 | Item | Unblocks | Note |
@@ -24,7 +27,9 @@ _Last updated: 2026-11-10 · Branch: `uat` · Full roadmap & audit: [`VYBE_AUDIT
 | Twilio **Account SID** (`AC…`) + **Auth Token** + **Verify Service SID** (`VA…`) | Phone OTP login | API key `SK…` already in `.env` but Supabase needs the above |
 | Email provider (e.g. **Resend**) + **domain** (e.g. vybe.app) | Real users receiving login codes | Free-plan Supabase mailer: links only, team only, 2/hour |
 | Trademark / store-name check for "VYBE" | Final bundle ID `app.vybe.mobile`, brand work | |
-| Firebase project (free) | Android push | Only if we do track 3a |
+| **Sentry** account → DSN + org/project slugs + auth token | Crash reports from testers | Free plan is fine |
+| **RevenueCat** account + Play Console (and later App Store Connect) products | Real subscriptions | See below; needs the Google Play org account first |
+| Privacy policy + Terms URLs | Required on the paywall by Apple/Google | Set `EXPO_PUBLIC_PRIVACY_URL` / `EXPO_PUBLIC_TERMS_URL` |
 
 ---
 
@@ -45,8 +50,8 @@ cd mobile && npm start                               # scan QR: iPhone camera / 
 supabase/scripts/dev-login-code.sh you@email.com     # 6-digit login code (UAT only; use "I have a test code" in the app)
 supabase/scripts/test-db.sh                          # SQL security tests on UAT (rolled back)
 supabase/scripts/test-db.sh --with-pending           # dry-run unpushed migrations + tests (rolled back)
-node supabase/scripts/smoke.mjs                      # end-to-end API test, 2 throwaway users (~31 checks)
-cd mobile && npm run typecheck && npm run lint && npm test   # app checks (50 unit tests)
+node supabase/scripts/smoke.mjs                      # end-to-end API test, 2 throwaway users (~47 checks)
+cd mobile && npm run typecheck && npm run lint && npm test   # app checks (59 unit tests)
 cd mobile && npm run gen:types                       # regenerate DB types after a migration (run from mobile/)
 ```
 
@@ -55,6 +60,29 @@ cd mobile && npm run gen:types                       # regenerate DB types after
 then `npm run gen:types`. New tables must `revoke all … from anon, authenticated` and grant explicitly (Supabase's defaults grant everything).
 
 **Secrets:** root `.env` (Supabase DB password, access token, Twilio key) and `mobile/.env.local` (public URL + publishable key) — both git-ignored. Rotate the DB password + access token before production (they were shared in chat).
+
+---
+
+## Turning on Sentry / RevenueCat
+
+**Sentry (crash reports)** — nothing reports until the DSN is set; never reports from development.
+1. sentry.io → create project (React Native) → copy the **DSN**.
+2. `cd mobile && npx eas-cli@latest env:create --environment preview --name EXPO_PUBLIC_SENTRY_DSN --value "<dsn>" --visibility plaintext`
+3. For readable stack traces: add `"organization"`/`"project"` to the `@sentry/react-native` plugin in `app.json`,
+   create an org auth token, `eas env:create --name SENTRY_AUTH_TOKEN --visibility secret`, and remove
+   `SENTRY_DISABLE_AUTO_UPLOAD` from `eas.json`. After `update:uat`, run `npx sentry-expo-upload-sourcemaps dist`.
+4. `npm run update:uat` (DSN is JS-only — no new APK needed).
+
+**RevenueCat (Premium)** — the app never decides Premium: our server asks RevenueCat's API (`sync-premium` right after a
+purchase/restore, `revenuecat-webhook` for renewals/expiry/refunds) and writes `entitlements`. Expo Go never sells.
+1. Play Console: subscription `vybe_premium` with base plans **monthly** and **annual** (annual: 7-day free-trial offer). Prices in ₹.
+2. RevenueCat: project → Google Play app (`app.vybe.mobile`, service-account JSON) → entitlement **`premium`** →
+   offering **default** (current) with packages **$rc_monthly** and **$rc_annual**.
+3. `supabase/scripts/setup-revenuecat.sh` → paste the RevenueCat **secret** key (sk_…); creates the webhook password.
+   RevenueCat → Integrations → Webhooks: URL printed by the script, Authorization = `REVENUECAT_WEBHOOK_AUTH` from `.env`. Send test event → 200.
+4. `eas env:create --environment preview --name EXPO_PUBLIC_REVENUECAT_ANDROID_KEY --value "goog_…" --visibility plaintext`
+   (public SDK key), then `npm run update:uat`.
+5. Test with a Play **license tester** account (test cards, renewals every few minutes) — roadmap §9 test matrix.
 
 ---
 
@@ -88,7 +116,8 @@ then `npm run gen:types`. New tables must `revoke all … from anon, authenticat
 - `20261111090000_meetups_push_account` — my_meetups / meetup_thread / meetup_participants, chat rate limit (30/min), push dispatch triggers (free / join / message), reports survive account deletion
 - `20261112090000_friendships_realtime` — live friend requests/accepts (INSERT/UPDATE only; never subscribe to DELETE)
 - `20261113090000_unread_badges` — meetup_reads + mark_meetup_read, unread_count, badge_count_for (service role), friend-request push
-- Edge Functions (code ready, **not deployed**): `delete-account` (JWT), `push` (shared secret; sounds, Android channels, badge, quiet hours, dead-token pruning)
+- `20261114090000_settings_premium` — `my_blocked()` for the Blocked users screen
+- Edge Functions (deployed to UAT): `delete-account` (JWT), `push` (shared secret; sounds, Android channels, badge, quiet hours, dead-token pruning), `sync-premium` (JWT), `revenuecat-webhook` (shared secret; fails closed until configured)
 - UAT auth: email OTP 6 digits / 10 min, site URL `vybe://`
 
 **App** (`mobile/`)
@@ -99,24 +128,26 @@ then `npm run gen:types`. New tables must `revoke all … from anon, authenticat
 - Profile: edit name/username/photo, log out, delete account
 - Badges: Home (new free friends), Chats (unread), Friends (requests); app-icon badge
 - Push client: token registration (skipped in Expo Go), tap routing, Android channels with custom sounds (`assets/sounds/`), no ping for the chat you're reading
-- Android fixes: sheets → full screens, keyboard (edge-to-edge) on chat / sign-in / onboarding / edit profile
+- Settings: Notifications (on/off, quiet hours, sounds → phone settings), Privacy (plain-language facts), Blocked users (unblock), Share my username
+- Premium: paywall (store prices, trial from store offer, savings %, renewal disclosure, restore, pending UPI payments, manage subscription); "needs Premium" prompts open it
+- Sentry crash reporting (off until DSN; user id only, no PII; route-aware error screen)
+- Android fixes: sheets → full screens, keyboard (edge-to-edge) on chat / sign-in / onboarding / edit profile, no duplicate titles on Add friend / I'm free
 - iOS fixes: content behind header on Edit profile / Group / Chat
 
 **Quality**
-- SQL tests T1–T16 · smoke test (incl. live chat delivery + storage permissions) · 50 unit tests · CI (typecheck, lint, tests, secret scan) · Prettier config (`mobile/.prettierrc`)
+- SQL tests T1–T17 · smoke test (~47 checks incl. live chat, storage, settings, blocked list, fake-Premium attempts) · 59 app unit tests · 8 RevenueCat mapping tests (`node --test supabase/functions/_shared/revenuecat-model.test.ts`) · CI (typecheck, lint, tests, secret scan) · Prettier config (`mobile/.prettierrc`)
 
 ### ⏳ Not done yet
-- Deploy Edge Functions to UAT (see Resume here)
-- EAS project + dev builds (Android first), real push on devices
-- Sentry crash reporting, analytics (PostHog)
+- Keys for Sentry / RevenueCat / legal URLs (see "Turning on")
+- iOS build (needs Apple Developer account); analytics (PostHog)
 - Apple / Google / phone login; custom SMTP
-- Privacy, notifications, blocked-users settings screens (rows show "Coming soon"); QR add
-- Premium: RevenueCat, paywall, webhook → `entitlements`
+- QR add (needs camera); muting individual friends
+- Store products + RevenueCat dashboard setup; sandbox test matrix (roadmap §9)
+- Scheduled deletion of chats older than 24 h (currently hidden from the app, still stored)
 - VYBE brand (icon, wordmark, colours) after trademark check; bundle ID change
 - Legal pages (privacy, terms), store listings, prod Supabase project, `prod` branch
 
 ### Known issues / notes
-- Android: full-screen "sheets" show the title twice (header + page heading)
 - Unfriend / decline don't update live on the other phone (by design — DELETE events can't be private); Friends tab refreshes on open and every 60 s
 - Expo Go can't receive VYBE pushes or play custom sounds — needs a dev build
 - `supabase gen types` must run from the repo root (use `npm run gen:types`)

@@ -7,7 +7,7 @@ import {
   useFonts,
 } from '@expo-google-fonts/inter';
 import { QueryClientProvider } from '@tanstack/react-query';
-import { DarkTheme, DefaultTheme, Stack, ThemeProvider } from 'expo-router';
+import { DarkTheme, DefaultTheme, ErrorBoundary as ExpoErrorBoundary, Stack, ThemeProvider } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
@@ -20,12 +20,17 @@ import { useMyStatus } from '@/features/availability/api';
 import { AvailabilityProvider } from '@/features/availability/availability-context';
 import { PushSync } from '@/features/availability/push-sync';
 import { RealtimeSync } from '@/features/availability/realtime-sync';
+import { PremiumSync } from '@/features/premium/premium-sync';
 import { errorMessage } from '@/lib/errors';
 import { queryClient } from '@/lib/query';
+import { Sentry } from '@/lib/sentry';
 import { spacing } from '@/theme/tokens';
 import { useTheme } from '@/theme/use-theme';
 
 SplashScreen.preventAutoHideAsync();
+
+/** Render crashes: report to Sentry (with the route), then show Expo Router's "Try again" screen. */
+export const ErrorBoundary = Sentry.wrapExpoRouterErrorBoundary(ExpoErrorBoundary);
 
 /**
  * Bottom sheet on iOS. On Android, native form sheets are unreliable (especially with the keyboard),
@@ -49,7 +54,12 @@ function sheetOptions(detents: number[], title: string, background: string) {
       };
 }
 
-export default function RootLayout() {
+/** A regular pushed screen with a native header and back button. */
+function pushed(title: string) {
+  return { headerShown: true, title, headerShadowVisible: false, headerBackButtonDisplayMode: 'minimal' as const };
+}
+
+function RootLayout() {
   const { colors, scheme } = useTheme();
   const [fontsLoaded, fontError] = useFonts({
     Inter_400Regular,
@@ -116,6 +126,7 @@ function RootNavigator() {
         <>
           <RealtimeSync />
           <PushSync />
+          <PremiumSync />
         </>
       ) : null}
       <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.background } }}>
@@ -159,15 +170,11 @@ function RootNavigator() {
               headerBackButtonDisplayMode: 'minimal',
             }}
           />
-          <Stack.Screen
-            name="profile"
-            options={{
-              headerShown: true,
-              title: 'Profile',
-              headerShadowVisible: false,
-              headerBackButtonDisplayMode: 'minimal',
-            }}
-          />
+          <Stack.Screen name="profile" options={pushed('Profile')} />
+          <Stack.Screen name="premium" options={pushed('Premium')} />
+          <Stack.Screen name="settings/notifications" options={pushed('Notifications')} />
+          <Stack.Screen name="settings/privacy" options={pushed('Privacy')} />
+          <Stack.Screen name="settings/blocked" options={pushed('Blocked users')} />
         </Stack.Protected>
       </Stack>
     </AvailabilityProvider>
@@ -192,3 +199,5 @@ const styles = StyleSheet.create({
   error: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: spacing.lg, padding: spacing.xl },
   center: { textAlign: 'center' },
 });
+
+export default Sentry.wrap(RootLayout);

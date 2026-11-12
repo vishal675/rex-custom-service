@@ -18,6 +18,9 @@ export const queryKeys = {
   friends: ['friends'] as const,
   circles: ['circles'] as const,
   meetups: ['meetups'] as const,
+  entitlement: ['entitlement'] as const,
+  settings: ['settings'] as const,
+  blocked: ['blocked'] as const,
   thread: (availabilityId: string) => ['thread', availabilityId] as const,
   participants: (availabilityId: string) => ['participants', availabilityId] as const,
 };

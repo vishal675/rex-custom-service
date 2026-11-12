@@ -707,6 +707,16 @@ export type Database = {
           sender_name: string;
         }[];
       };
+      my_blocked: {
+        Args: Record<PropertyKey, never>;
+        Returns: {
+          avatar_path: string;
+          blocked_at: string;
+          display_name: string;
+          user_id: string;
+          username: string;
+        }[];
+      };
       my_friends: {
         Args: Record<PropertyKey, never>;
         Returns: {

@@ -321,6 +321,20 @@ do $$ begin
 exception when insufficient_privilege then null;
 end $$;
 
+-- T17: blocked list (bob blocked alice in T11) — only the blocker sees it; unblock clears it
+select set_config('request.jwt.claims', '{"sub":"a0000000-0000-4000-8000-000000000001","role":"authenticated"}', true);
+do $$ begin
+  if (select count(*) from public.my_blocked()) <> 0 then raise exception 'FAIL T17a: blocked user sees the block'; end if;
+end $$;
+select set_config('request.jwt.claims', '{"sub":"a0000000-0000-4000-8000-000000000002","role":"authenticated"}', true);
+do $$ begin
+  if (select username from public.my_blocked()) is distinct from 'alice' then
+    raise exception 'FAIL T17b: blocker does not see alice in my_blocked';
+  end if;
+  perform public.unblock_user('a0000000-0000-4000-8000-000000000001');
+  if (select count(*) from public.my_blocked()) <> 0 then raise exception 'FAIL T17c: unblock did not clear'; end if;
+end $$;
+
 -- T12: anon has no access at all
 reset role;
 set local role anon;

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Alert, ScrollView, Share, StyleSheet, View } from 'react-native';
+import { Alert, Platform, ScrollView, Share, StyleSheet, View } from 'react-native';
 
 import { Avatar } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
@@ -73,7 +73,8 @@ export default function AddFriendSheet() {
 
   return (
     <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-      <Text variant="title">Add a friend</Text>
+      {/* Android opens this as a full screen whose header already shows the title. */}
+      {Platform.OS === 'ios' ? <Text variant="title">Add a friend</Text> : null}
       <TextField
         label="USERNAME"
         value={query}
@@ -128,7 +129,7 @@ export default function AddFriendSheet() {
 }
 
 const styles = StyleSheet.create({
-  content: { padding: spacing.xl, paddingTop: spacing.xxl, gap: spacing.lg },
+  content: { padding: spacing.xl, paddingTop: Platform.OS === 'ios' ? spacing.xxl : spacing.lg, gap: spacing.lg },
   result: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, padding: spacing.md, borderRadius: radius.lg },
   flex: { flex: 1 },
   invite: { gap: spacing.sm, paddingTop: spacing.xl, marginTop: spacing.md, borderTopWidth: StyleSheet.hairlineWidth },

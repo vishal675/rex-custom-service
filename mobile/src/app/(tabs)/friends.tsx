@@ -14,6 +14,7 @@ import { useFreeNow } from '@/features/availability/api';
 import { useAvailability } from '@/features/availability/availability-context';
 import { useCircles, useFriends, useRemoveFriend, useRespondToRequest } from '@/features/friends/api';
 import { splitFriends, usableCircleIds, type Friend } from '@/features/friends/model';
+import { promptPremium } from '@/features/premium/prompt';
 import { useNow } from '@/hooks/use-now';
 import { errorMessage } from '@/lib/errors';
 import { radius, spacing } from '@/theme/tokens';
@@ -45,7 +46,7 @@ export default function FriendsScreen() {
 
   const newGroup = () => {
     if (!isPremium && circles.length >= 2) {
-      Alert.alert('VYBE Premium', 'The free plan includes 2 groups. Premium unlocks unlimited groups — coming soon.');
+      promptPremium();
       return;
     }
     router.push({ pathname: '/circle/[id]', params: { id: 'new' } });

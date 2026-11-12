@@ -133,6 +133,29 @@ try {
   check('block hides free status', must(await B.client.rpc('free_now'), 'free_now').length === 0);
   check('block removes friendship', must(await A.client.rpc('my_friends'), 'friends').length === 0);
   check('blocked user cannot find blocker', must(await A.client.rpc('find_user', { p_username: users[1].username }), 'find').length === 0);
+  const blockedB = must(await B.client.rpc('my_blocked'), 'my_blocked');
+  check('blocker sees blocked list', blockedB.length === 1 && blockedB[0].user_id === A.id);
+  check('blocked person does not see the block', must(await A.client.rpc('my_blocked'), 'my_blocked').length === 0);
+
+  // Settings: quiet hours + notifications (read by the push function).
+  must(await A.client.from('user_settings').update({ quiet_hours_start: '22:00', quiet_hours_end: '07:00', notifications_enabled: false }).eq('user_id', A.id), 'settings');
+  const st = must(await A.client.from('user_settings').select('quiet_hours_start, quiet_hours_end, notifications_enabled').eq('user_id', A.id).single(), 'settings read');
+  check('settings saved', st.quiet_hours_start === '22:00:00' && st.quiet_hours_end === '07:00:00' && st.notifications_enabled === false, JSON.stringify(st));
+  const stB = await A.client.from('user_settings').update({ notifications_enabled: false }).eq('user_id', B.id).select();
+  check("cannot change someone else's settings", (stB.data ?? []).length === 0);
+
+  // Premium sync: server asks RevenueCat; never grants Premium without a real subscription.
+  const sync = await A.client.functions.invoke('sync-premium', { method: 'POST' });
+  const syncStatus = sync.error?.context?.status ?? 200;
+  check('sync-premium: no subscription → not Premium (or not configured yet)',
+    (syncStatus === 200 && sync.data?.premium === false) || syncStatus === 503, `${syncStatus} ${JSON.stringify(sync.data)}`);
+  check('still not Premium after sync', must(await A.client.rpc('my_status'), 'status').is_premium === false);
+  const hook = await fetch(`${URL_}/functions/v1/revenuecat-webhook`, {
+    method: 'POST', headers: { Authorization: 'Bearer wrong', 'Content-Type': 'application/json' },
+    body: JSON.stringify({ event: { id: 'smoke', type: 'INITIAL_PURCHASE', app_user_id: A.id } }),
+  });
+  check('webhook rejects wrong password', hook.status === 401 || hook.status === 500, String(hook.status));
+  check('fake webhook did not grant Premium', must(await A.client.rpc('my_status'), 'status').is_premium === false);
 
   // Delete account through the real Edge Function (B deletes themself).
   const del = await B.client.functions.invoke('delete-account', { method: 'POST' });

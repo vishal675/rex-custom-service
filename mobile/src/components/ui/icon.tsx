@@ -17,6 +17,8 @@ const ICONS = {
   logout: { ios: 'rectangle.portrait.and.arrow.right', android: 'logout' },
   chat: { ios: 'bubble.left.and.bubble.right', android: 'forum' },
   plus: { ios: 'plus', android: 'add' },
+  premium: { ios: 'sparkles', android: 'workspace_premium' },
+  share: { ios: 'square.and.arrow.up', android: 'share' },
 } as const satisfies Record<string, SymbolName>;
 
 export type IconName = keyof typeof ICONS;

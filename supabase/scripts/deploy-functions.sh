@@ -5,7 +5,8 @@
 #   2. Stores it as the Edge Function secret PUSH_DISPATCH_SECRET.
 #   3. Stores the push function URL + the same secret in Supabase Vault (read by private.dispatch_push).
 #      Only on first run — existing Vault entries are left untouched.
-#   4. Deploys `delete-account` (JWT required) and `push` (shared-secret only) without Docker.
+#   4. Deploys `delete-account` + `sync-premium` (JWT required), `push` + `revenuecat-webhook` (shared secret) without Docker.
+#      RevenueCat secrets (REVENUECAT_SECRET_KEY, REVENUECAT_WEBHOOK_AUTH) are set separately — see docs/PLAN.md.
 set -euo pipefail
 cd "$(dirname "$0")/../.."
 set -a; source .env; set +a
@@ -26,5 +27,5 @@ else
   echo "Push secret already configured — leaving it as is."
 fi
 
-npx -y supabase@latest functions deploy delete-account push --use-api --yes
+npx -y supabase@latest functions deploy delete-account push revenuecat-webhook sync-premium --use-api --yes
 echo "Done."

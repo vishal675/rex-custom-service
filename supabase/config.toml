@@ -428,3 +428,11 @@ verify_jwt = true
 # Called only by the database (pg_net) with a shared secret header; no user JWT.
 [functions.push]
 verify_jwt = false
+
+# Called by RevenueCat with the shared Authorization value (REVENUECAT_WEBHOOK_AUTH); no user JWT.
+[functions.revenuecat-webhook]
+verify_jwt = false
+
+# Called by the signed-in user after a purchase / restore; the gateway verifies their JWT.
+[functions.sync-premium]
+verify_jwt = true

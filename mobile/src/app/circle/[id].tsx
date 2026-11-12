@@ -10,6 +10,7 @@ import { Text } from '@/components/ui/text';
 import { TextField } from '@/components/ui/text-field';
 import { useCircles, useDeleteCircle, useFriends, useSaveCircle } from '@/features/friends/api';
 import { CIRCLE_EMOJIS, splitFriends } from '@/features/friends/model';
+import { promptPremium } from '@/features/premium/prompt';
 import { errorMessage, isPremiumRequired } from '@/lib/errors';
 import { spacing } from '@/theme/tokens';
 import { useTheme } from '@/theme/use-theme';
@@ -79,7 +80,8 @@ function CircleForm({
       });
       router.back();
     } catch (e) {
-      Alert.alert(isPremiumRequired(e) ? 'VYBE Premium' : "Couldn't save group", errorMessage(e));
+      if (isPremiumRequired(e)) promptPremium();
+      else Alert.alert("Couldn't save group", errorMessage(e));
     }
   };
 
